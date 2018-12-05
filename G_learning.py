@@ -22,6 +22,7 @@ class learning_instance_preference:
         self.cov=self.compute_cov(K)
         self.inv_cov=np.linalg.inv(self.cov)
         self.sigma=sigma
+        self.K=K
 
     @staticmethod
     def gaussian_kernel(x,y,K):
@@ -44,7 +45,7 @@ class learning_instance_preference:
         return z,np.apply_along_axis(lambda x:norm.cdf(x,loc=0,scale=1),0,z)
 
     def compute_S(self,y):
-        phi=self.compute_z_phi(y)
+        phi=self.compute_z_phi(y)[1]
         prior=0.5*np.inner(y,np.dot(self.inv_cov,y))
         return -np.sum(np.log(phi))+prior
 
@@ -68,28 +69,45 @@ class learning_instance_preference:
         return phi_Hess+self.inv_cov
 
     def compute_MAP(self,y):
-        return minimize(self.compute_S,y,method='Newton-CG',jac=self.compute_grad_S, hess=self.compute_Hessian_S)
+        return minimize(self.compute_S,y,method='Newton-CG',jac=self.compute_grad_S, hess=self.compute_Hessian_S,
+                        tol=1e-4)
 
     def evidence_approx(self,y):
         S,H=self.compute_S(y),self.compute_Hessian_S(y)
-        nu_map=H-self.inv_cov
-        denom=np.linalg.det(np.eye(self.n)+np.dot(self.cov,nu_map))
+        denom=np.linalg.det(np.dot(self.cov,H))
         return min(1,np.exp(-S)/np.sqrt(np.abs(denom)))
 
-    def tuning_parameters(self):
-        pass
+    def compute_MAP_with_gridsearch(self,y0,grid_K,grid_sigma):
+        best_K,best_sigma,best_evidence=grid_K[0],grid_sigma[0],0.
+        for K in tqdm(grid_K):
+            for sigma in tqdm(grid_sigma):
+                self.K=K
+                self.sigma=sigma
+                self.cov=self.compute_cov(K)
+                self.inv_cov=np.linalg.inv(self.cov)
+                MAP=self.compute_MAP(y0)
+                evidence=self.evidence_approx(MAP['x'])
+                if evidence>best_evidence:
+                    best_evidence=evidence
+                    best_K, best_sigma=K,sigma
+                    best_MAP=MAP
+        print('Best K and Sigma in grid : {},{}'.format(best_K,best_sigma))
+        self.K,self.sigma=best_K,best_sigma
+        self.cov=self.compute_cov(self.K)
+        self.inv_cov=np.linalg.inv(self.cov)
+        return best_MAP
 
-    def predict_single_pref(self,r,s,f_map,M,K,sigma):
-        sigma_t=np.array([[1.,self.gaussian_kernel(r,s,K)],[self.gaussian_kernel(r,s,K),1.]])
+    def predict_single_pref(self,r,s,f_map,M):
+        sigma_t=np.array([[1.,self.gaussian_kernel(r,s,self.K)],[self.gaussian_kernel(r,s,self.K),1.]])
         kt=np.zeros((self.n,2))
-        kt[:,0]=[self.gaussian_kernel(r,self.X[i],K) for i in range(self.n)]
-        kt[:,1]=[self.gaussian_kernel(s, self.X[i],K) for i in range(self.n)]
+        kt[:,0]=[self.gaussian_kernel(r,self.X[i],self.K) for i in range(self.n)]
+        kt[:,1]=[self.gaussian_kernel(s, self.X[i],self.K) for i in range(self.n)]
         mu_star=np.dot(kt.T,np.dot(self.inv_cov,f_map))
         s_star=sigma_t-np.dot(np.dot(kt.T,M),kt)
-        new_sigma=np.sqrt(2*sigma**2+s_star[0,0]+s_star[1,1]-s_star[0,1]-s_star[1,0])
+        new_sigma=np.sqrt(2*self.sigma**2+s_star[0,0]+s_star[1,1]-s_star[0,1]-s_star[1,0])
         return norm.cdf((mu_star[0]-mu_star[1])/new_sigma,loc=0,scale=1)
 
-    def predict(self,test_set,f_map,K,sigma):
+    def predict(self,test_set,f_map):
         X=test_set[0]
         pref=test_set[1]
         score=0
@@ -97,7 +115,7 @@ class learning_instance_preference:
         H=self.compute_Hessian_S(f_map)
         M=np.linalg.inv(self.cov+np.linalg.inv(H-self.cov))
         for p in tqdm(pref):
-            proba=self.predict_single_pref(X[p[0]],X[p[1]],f_map,M,K,sigma)
+            proba=self.predict_single_pref(X[p[0]],X[p[1]],f_map,M)
             proba_pref.append(proba)
             if proba>0.5:
                 score+=1
