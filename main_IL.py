@@ -1,7 +1,6 @@
-import G_learning as GL
+import Instance_learning as IL
 import numpy as np
 import input_data as data
-import matplotlib.pyplot as plt
 
 ############### Parameters to simulate train/test samples #######################################
 
@@ -11,7 +10,7 @@ alpha=np.array([0.4,0.6])
 
 n,d,m=10,2,20
 #n,d,m=30,10,80
-generator=data.simulation_generator(func=data.cobb_douglas,func_param=alpha,d=d,n=n,m=m)
+generator=data.instance_pref_generator(func=data.cobb_douglas,func_param=alpha,d=d,n=n,m=m)
 train=generator.generate_X_pref()
 generator.n,generator.m=150,200
 test=generator.generate_X_pref()
@@ -19,7 +18,8 @@ test=generator.generate_X_pref()
 ################## Model ################################
 
 K,sigma=5.,0.05
-model=GL.learning_instance_preference(inputs=train,K=K,sigma=sigma)
+model=IL.learning_instance_preference(inputs=train,K=K,sigma=sigma)
+
 y0=np.zeros(model.n)
 
 MAP=model.compute_MAP(y0)
