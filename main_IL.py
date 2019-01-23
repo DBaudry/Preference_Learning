@@ -6,20 +6,22 @@ import input_data as data
 
 np.random.seed(42311)
 
-#alpha=np.array([0.1,0.3,0.2,0.3,0.1])
-alpha = np.array([0.4, 0.6])
-#alpha=np.array([1/10.]*10)
+# alpha=np.array([0.1,0.3,0.2,0.3,0.1])
+# alpha = np.array([0.4, 0.6])
+alpha = np.array([1/10.]*10)
 
-n, d, m = 10, 2, 20
+n, d, m = 20, 10, 200
 #n,d,m=30,10,80
 generator = data.instance_pref_generator(func=data.cobb_douglas, func_param=alpha, d=d, n=n, m=m)
 train = generator.generate_X_pref()
-generator.n, generator.m = 150, 200
+train_pref = generator.get_true_pref(train[0])
+generator.n, generator.m = 150, 1000
 test = generator.generate_X_pref()
+test_pref = generator.get_true_pref(test[0])
 
 ################## Model ################################
 
-K,sigma = 5., 0.05
+K, sigma = 5., 0.05
 model = IL.learning_instance_preference(inputs=train, K=K, sigma=sigma)
 
 y0 = np.zeros(model.n)
@@ -33,10 +35,13 @@ MAP = model.compute_MAP(y0)
 print('Convergence of the minimizer of S : {}'.format(MAP['success']))
 print('Maximum a Posteriori : {}'.format(MAP['x']))
 
+pref_ap = model.get_train_pref(MAP['x'])
+print('Score on train: {}'.format(model.score(pref_ap, train_pref)))
+
 print('Evidence Approximation (p(D|f_MAP)) : {}'.format(model.evidence_approx(MAP['x'])))
 
-r,s=np.random.uniform(size=(2,d))
-score,proba=model.predict(test,MAP['x'])
+r, s = np.random.uniform(size=(2, d))
+score, proba = model.predict(test, MAP['x'])
 
 print('Probabilities : {}'.format(proba))
-print('Score : {}'.format(score))
+print('Score on test: {}'.format(score))
