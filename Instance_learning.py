@@ -70,7 +70,9 @@ class learning_instance_preference:
         return -np.sum(np.log(phi))+prior
 
     def s(self, k, i):
-        return (i == self.D[k][0])-(i == self.D[k][1])
+        check_0 = 1 if self.D[k][0] == i else 0
+        check_1 = 1 if self.D[k][1] == i else 0
+        return check_0 - check_1
 
     def compute_grad_S(self, y):
         """
