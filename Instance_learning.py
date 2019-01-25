@@ -29,6 +29,9 @@ class learning_instance_preference:
     def gaussian_kernel(x, y, K):
         return np.exp(-K/2.*np.sum((x-y)**2))
 
+    def n_pdf(self, x):
+        return 1/np.sqrt(2*np.pi)*np.exp(-x**2/2)
+
     def compute_cov(self, K):
         """
         :param K: parameter of the gaussian kernel
@@ -55,7 +58,7 @@ class learning_instance_preference:
         :return: list of z_k and list of phi(z_k) as defined in (5) in the paper
         """
         z = np.apply_along_axis(lambda x: (y[x[0]]-y[x[1]])/(np.sqrt(2)*self.sigma), 1, self.D)
-        return z, np.apply_along_axis(lambda x: norm.cdf(x, loc=0, scale=1), 0, z)
+        return z, norm.cdf(z)
 
     def compute_S(self, y):
         """
@@ -77,7 +80,7 @@ class learning_instance_preference:
         z, phi = self.compute_z_phi(y)
 
         def partial_df(k, i):  #for the log_phi part
-            return -self.s(k, i)/np.sqrt(2)/self.sigma*norm.pdf(z[k])/phi[k]
+            return -self.s(k, i)/np.sqrt(2)/self.sigma*self.n_pdf(z[k])/phi[k]
 
         phi_grad = np.array([sum([partial_df(k, i) for k in range(self.m)]) for i in range(self.n)])
         return phi_grad+np.dot(self.inv_cov, y)
@@ -91,7 +94,7 @@ class learning_instance_preference:
 
         def partial_d2f(k, i, j):
             s_ij = self.s(k, i)*self.s(k, j)/2/self.sigma**2
-            nk=norm.pdf(z[k])/phi[k]
+            nk = self.n_pdf(z[k])/phi[k]
             return s_ij*(nk**2+z[k]*nk)
         phi_Hess = np.array([[sum([partial_d2f(k, i, j) for k in range(self.m)])
                               for j in range(self.n)] for i in range(self.n)])
@@ -123,7 +126,7 @@ class learning_instance_preference:
         :return: Maximum a posteriori for the given value of x for the parameters
         with the largest evidence
         """
-        best_K, best_sigma,best_evidence = grid_K[0], grid_sigma[0], 0.
+        best_K, best_sigma, best_evidence = grid_K[0], grid_sigma[0], 0.
         for K in tqdm(grid_K):
             for sigma in tqdm(grid_sigma):
                 self.K = K
