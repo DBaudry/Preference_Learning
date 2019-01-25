@@ -1,5 +1,36 @@
 import numpy as np
 import copy
+import utils
+import itertools
+
+class pref_generator():
+    def __init__(self, dataset):
+        self.X = utils.read_data(dataset)
+        self.n, self.d = self.X.shape
+        self.pairs_index = np.array([p for p in itertools.combinations(range(self.n), 2)])
+
+    def train_test_generator(self, m):
+        replace = True if (m > self.n * (self.n - 1) / 2) else False
+        idx = np.random.choice(len(self.pairs_index), m, replace=replace)
+        pairs = self.pairs_index[idx]
+        return tuple(map(tuple, pairs))
+
+    def draw_preference(self, pairs):
+        pref = []
+        for p in pairs:
+            a, b = p
+            if self.X.iloc[a, -1] > self.X.iloc[b, -1]:
+                pref.append((a, b))
+            else:
+                pref.append((b, a))
+        return pref
+
+    def get_input(self, m):
+        pairs = self.train_test_generator(m)
+        pref = self.draw_preference(pairs)
+        data = self.X.iloc[np.unique(pairs), :]
+        return [np.array(data), pref]
+
 
 
 class instance_pref_generator:
@@ -84,6 +115,6 @@ class label_pref_generator(instance_pref_generator):
         return pref
 
 
-def cobb_douglas(x,alpha):
+def cobb_douglas(x, alpha):
     x_alpha = x**alpha
     return np.prod(x_alpha)
