@@ -98,6 +98,7 @@ class learning_instance_preference:
             return s_ij*(nk**2+z[k]*nk)
         phi_Hess = np.array([[sum([partial_d2f(k, i, j) for k in range(self.m)])
                               for j in range(self.n)] for i in range(self.n)])
+        self.nu = phi_Hess
         return phi_Hess+self.inv_cov
 
     def compute_MAP(self, y):
@@ -116,7 +117,7 @@ class learning_instance_preference:
         """
         S, H = self.compute_S(y), self.compute_Hessian_S(y)
         denom = np.linalg.det(np.dot(self.cov, H))
-        return min(1, np.exp(-S)/np.sqrt(np.abs(denom)))
+        return np.log(np.exp(-S)/np.sqrt(np.abs(denom)))
 
     def compute_MAP_with_gridsearch(self, y0, grid_K, grid_sigma):
         """
@@ -159,7 +160,9 @@ class learning_instance_preference:
         kt[:, 1] = [self.gaussian_kernel(s, self.X[i], self.K) for i in range(self.n)]
         mu_star = np.dot(kt.T, np.dot(self.inv_cov, f_map))
         s_star = sigma_t-np.dot(np.dot(kt.T, M), kt)
-        new_sigma = np.sqrt(2*self.sigma**2+s_star[0, 0]+s_star[1, 1]-s_star[0, 1]-s_star[1, 0])
+        new_sigma = np.sqrt(2*self.sigma**2+s_star[0, 0]+s_star[1, 1]-2*s_star[0, 1])
+        if np.isnan(new_sigma):
+            print(r, s)
         return norm.cdf((mu_star[0]-mu_star[1])/new_sigma, loc=0, scale=1)
 
     def predict(self, test_set, f_map):
@@ -175,8 +178,8 @@ class learning_instance_preference:
         pref = test_set[1]
         score = 0
         proba_pref = []
-        H = self.compute_Hessian_S(f_map)
-        M = np.linalg.inv(self.cov+np.linalg.inv(H-self.inv_cov))
+        self.compute_Hessian_S(f_map)
+        M = np.linalg.inv(self.cov+np.linalg.inv(self.nu))
         for p in tqdm(pref):
             proba = self.predict_single_pref(X[p[0]], X[p[1]], f_map, M)
             proba_pref.append(proba)
