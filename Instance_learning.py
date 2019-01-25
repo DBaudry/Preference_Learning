@@ -117,7 +117,7 @@ class learning_instance_preference:
         """
         S, H = self.compute_S(y), self.compute_Hessian_S(y)
         denom = np.linalg.det(np.dot(self.cov, H))
-        return min(1, np.exp(-S)/np.sqrt(np.abs(denom)))
+        return np.log(np.exp(-S)/np.sqrt(np.abs(denom)))
 
     def compute_MAP_with_gridsearch(self, y0, grid_K, grid_sigma):
         """
