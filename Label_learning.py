@@ -5,6 +5,7 @@ import copy
 from tqdm import tqdm
 from scipy.optimize import minimize
 
+
 class learning_label_preference:
     def __init__(self, inputs, K, sigma):
         self.init_param(inputs, K, sigma)
@@ -30,8 +31,11 @@ class learning_label_preference:
     def gaussian_kernel(x, y, K):
         return np.exp(-K/2.*np.sum((x-y)**2))
 
+    def n_pdf(self, x):
+        return 1/np.sqrt(2*np.pi)*np.exp(-x**2/2)
+
     def compute_cov(self, K):
-        cov=np.eye(self.n)
+        cov = np.eye(self.n)
         for i in range(self.n):
             for j in range(i):
                 cov_ij = self.gaussian_kernel(self.X[i], self.X[j], K)
@@ -62,13 +66,11 @@ class learning_label_preference:
 
     def compute_z_phi(self, y):
         z = []
-        phi_z = []
         for i in range(self.n):
             for pref in self.D[i]:
                 current_z = (y[pref[0], i]-y[pref[1], i])/np.sqrt(2)/self.sigma
                 z.append(current_z)
-                phi_z.append(norm.cdf(current_z,loc=0,scale=1))
-        return z, phi_z
+        return z, norm.cdf(z)
 
     def compute_S(self, y):
         phi = self.compute_z_phi(y)[1]
@@ -87,8 +89,8 @@ class learning_label_preference:
         for i in range(self.n):
             for j, pref in enumerate(self.D[i]):
                 index = self.corresp[i][j]
-                grad[pref[0], i] -= norm.pdf(z[index])/phi[index]/np.sqrt(2)/self.sigma
-                grad[pref[1], i] += norm.pdf(z[index])/phi[index]/np.sqrt(2)/self.sigma
+                grad[pref[0], i] -= self.n_pdf(z[index])/phi[index]/np.sqrt(2)/self.sigma
+                grad[pref[1], i] += self.n_pdf(z[index])/phi[index]/np.sqrt(2)/self.sigma
         for a in range(self.n_labels):
             grad[a] += np.dot(self.all_inv_cov[a], y[a])
         return grad.reshape(self.n_labels*self.n)
@@ -99,7 +101,7 @@ class learning_label_preference:
         for i in range(self.n):
             for j, pref in enumerate(self.D[i]):
                 index = self.corresp[i][j]
-                nk = norm.pdf(z[index])/phi[index]
+                nk = self.n_pdf(z[index])/phi[index]
                 Hess_phi[i][pref[0], pref[1]] += -1/2/self.sigma**2*(nk**2+z[index]*nk)
                 Hess_phi[i][pref[1], pref[0]] += -1/2/self.sigma**2*(nk**2+z[index]*nk)
         Hess_phi_all = np.zeros((self.n_labels*self.n, self.n_labels*self.n))
