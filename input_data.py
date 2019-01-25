@@ -28,9 +28,19 @@ class pref_generator():
     def get_input(self, m):
         pairs = self.train_test_generator(m)
         pref = self.draw_preference(pairs)
-        data = self.X.iloc[np.unique(pairs), :]
+        self.indices = np.unique(pairs)
+        data = self.X.iloc[self.indices, :-1]
         return [np.array(data), pref]
 
+    def get_true_pref(self, data):
+        p = data.shape[0]
+        X = np.array(self.X)
+        real_pref = np.zeros((p, p))
+        for i in range(p):
+            for j in range(p):
+                if X[self.indices[i], -1] > X[self.indices[j], -1]:
+                    real_pref[i, j] = 1
+        return real_pref
 
 
 class instance_pref_generator:

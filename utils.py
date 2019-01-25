@@ -1,5 +1,6 @@
 import pandas as pd
 import os
+import numpy as np
 
 
 def read_data(data):
@@ -15,3 +16,17 @@ def read_data(data):
         if m in ['object', 'str']:
             pd.to_numeric(X.iloc[i, :])
     return X
+
+
+def distance(x, y):
+    if x is None or y is None:
+        return np.inf
+    return np.sum((x-y)**2)
+
+
+def n_pdf(x):
+    return 1/np.sqrt(2*np.pi)*np.exp(-x**2/2)
+
+
+def gaussian_kernel(x, y, K):
+    return np.exp(-K/2.*np.sum((x-y)**2))

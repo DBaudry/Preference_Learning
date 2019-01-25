@@ -3,7 +3,7 @@ from scipy.stats import multivariate_normal as mn
 from scipy.stats import norm
 from tqdm import tqdm
 from scipy.optimize import minimize
-
+from utils import distance, n_pdf, gaussian_kernel
 
 class learning_instance_preference:
     def __init__(self, inputs, K, sigma):
@@ -20,17 +20,14 @@ class learning_instance_preference:
         self.D = inputs[1]
         self.n, self.d = self.X.shape
         self.m = len(self.D)
-        self.cov = self.compute_cov(K)
-        self.inv_cov = np.linalg.inv(self.cov)
+        if not isinstance(K, list):
+            self.cov = self.compute_cov(K)
+            self.inv_cov = np.linalg.inv(self.cov)
         self.sigma = sigma
         self.K = K
-
-    @staticmethod
-    def gaussian_kernel(x, y, K):
-        return np.exp(-K/2.*np.sum((x-y)**2))
-
-    def n_pdf(self, x):
-        return 1/np.sqrt(2*np.pi)*np.exp(-x**2/2)
+        self.current_y = None
+        self.z = None
+        self.phi = None
 
     def compute_cov(self, K):
         """
@@ -40,7 +37,7 @@ class learning_instance_preference:
         cov = np.eye(self.n)
         for i in range(self.n):
             for j in range(i):
-                cov_ij = self.gaussian_kernel(self.X[i], self.X[j], K)
+                cov_ij = gaussian_kernel(self.X[i], self.X[j], K)
                 cov[i, j] = cov_ij
                 cov[j, i] = cov_ij
         return cov
@@ -58,29 +55,35 @@ class learning_instance_preference:
         :return: list of z_k and list of phi(z_k) as defined in (5) in the paper
         """
         z = np.apply_along_axis(lambda x: (y[x[0]]-y[x[1]])/(np.sqrt(2)*self.sigma), 1, self.D)
-        return z, norm.cdf(z)
+        self.current_y = y
+        self.z = z
+        self.phi = norm.cdf(z)
 
     def compute_S(self, y):
         """
         :param y: vector of size n
         :return: S(y)
         """
-        phi = self.compute_z_phi(y)[1]
+        if distance(y, self.current_y) != 0:
+            self.compute_z_phi(y)
         prior = 0.5*np.inner(y, np.dot(self.inv_cov, y))
-        return -np.sum(np.log(phi))+prior
+        return -np.sum(np.log(self.phi))+prior
 
     def s(self, k, i):
-        return (i == self.D[k][0])-(i == self.D[k][1])
+        check_0 = 1 if self.D[k][0] == i else 0
+        check_1 = 1 if self.D[k][1] == i else 0
+        return check_0 - check_1
 
     def compute_grad_S(self, y):
         """
         :param y: vector of size n
         :return: Gradient of S in y
         """
-        z, phi = self.compute_z_phi(y)
+        if distance(y, self.current_y) != 0:
+            self.compute_z_phi(y)
 
         def partial_df(k, i):  #for the log_phi part
-            return -self.s(k, i)/np.sqrt(2)/self.sigma*self.n_pdf(z[k])/phi[k]
+            return -self.s(k, i)/np.sqrt(2)/self.sigma*n_pdf(self.z[k])/self.phi[k]
 
         phi_grad = np.array([sum([partial_df(k, i) for k in range(self.m)]) for i in range(self.n)])
         return phi_grad+np.dot(self.inv_cov, y)
@@ -90,12 +93,13 @@ class learning_instance_preference:
         :param y: vector of size n
         :return: Hessian of S in y
         """
-        z, phi = self.compute_z_phi(y)
+        if distance(y, self.current_y) != 0:
+            self.compute_z_phi(y)
 
         def partial_d2f(k, i, j):
             s_ij = self.s(k, i)*self.s(k, j)/2/self.sigma**2
-            nk = self.n_pdf(z[k])/phi[k]
-            return s_ij*(nk**2+z[k]*nk)
+            nk = n_pdf(self.z[k])/self.phi[k]
+            return s_ij*(nk**2+self.z[k]*nk)
         phi_Hess = np.array([[sum([partial_d2f(k, i, j) for k in range(self.m)])
                               for j in range(self.n)] for i in range(self.n)])
         self.nu = phi_Hess
@@ -127,7 +131,7 @@ class learning_instance_preference:
         :return: Maximum a posteriori for the given value of x for the parameters
         with the largest evidence
         """
-        best_K, best_sigma, best_evidence = grid_K[0], grid_sigma[0], 0.
+        best_K, best_sigma, best_evidence = grid_K[0], grid_sigma[0], -np.inf
         for K in tqdm(grid_K):
             for sigma in tqdm(grid_sigma):
                 self.K = K
@@ -136,6 +140,7 @@ class learning_instance_preference:
                 self.inv_cov = np.linalg.inv(self.cov)
                 MAP = self.compute_MAP(y0)
                 evidence = self.evidence_approx(MAP['x'])
+                print(K, sigma, evidence)
                 if evidence > best_evidence:
                     best_evidence = evidence
                     best_K, best_sigma = K, sigma
@@ -154,10 +159,10 @@ class learning_instance_preference:
         :param M: covariance matrix computed for the maximum a posteriori
         :return: Probability that r is preferred over s
         """
-        sigma_t = np.array([[1., self.gaussian_kernel(r, s, self.K)], [self.gaussian_kernel(r, s, self.K), 1.]])
+        sigma_t = np.array([[1., gaussian_kernel(r, s, self.K)], [gaussian_kernel(r, s, self.K), 1.]])
         kt = np.zeros((self.n, 2))
-        kt[:, 0] = [self.gaussian_kernel(r, self.X[i], self.K) for i in range(self.n)]
-        kt[:, 1] = [self.gaussian_kernel(s, self.X[i], self.K) for i in range(self.n)]
+        kt[:, 0] = [gaussian_kernel(r, self.X[i], self.K) for i in range(self.n)]
+        kt[:, 1] = [gaussian_kernel(s, self.X[i], self.K) for i in range(self.n)]
         mu_star = np.dot(kt.T, np.dot(self.inv_cov, f_map))
         s_star = sigma_t-np.dot(np.dot(kt.T, M), kt)
         new_sigma = np.sqrt(2*self.sigma**2+s_star[0, 0]+s_star[1, 1]-2*s_star[0, 1])
