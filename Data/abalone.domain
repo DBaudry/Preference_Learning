@@ -1,0 +1,9 @@
+sex : M, F, I
+length : continuous
+diameter:continuous
+height:continuous
+whole weight:continuous
+shucked weight:continuous
+viscera weight:continuous
+shell weight:continuous
+rings:continuous
