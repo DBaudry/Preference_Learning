@@ -15,5 +15,3 @@ def read_data(data):
         if m in ['object', 'str']:
             pd.to_numeric(X.iloc[i, :])
     return X
-
-X = read_data('abalone')

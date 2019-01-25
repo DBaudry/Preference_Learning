@@ -34,15 +34,12 @@ class pref_generator():
 
 
 class instance_pref_generator:
-    def __init__(self, func, func_param, d, n, m):
-        self.n = n
-        self.m = m
-        self.d = d
+    def __init__(self, func, func_param):
         self.real_f = func
         self.f_param = func_param
 
-    def generate_X(self):
-        return np.random.uniform(size=(self.n, self.d))
+    def generate_X(self, n, d):
+        return np.random.uniform(size=(n, d))
 
     @staticmethod
     def draw_preference(n):
@@ -53,10 +50,10 @@ class instance_pref_generator:
         return a, b
 
     def add_a_pref(self, X, existing_pref, iter_max=10):
-        a, b = self.draw_preference(self.n)
-        n_iter = 0
+        n_iter, n = 0, X.shape[0]
+        a, b=self.draw_preference(n)
         while (a, b) in existing_pref or (b, a) in existing_pref and n_iter < iter_max:
-            a, b = self.draw_preference(self.n)
+            a, b = self.draw_preference(n)
             n_iter += 1
         f_a, f_b = self.real_f(X[a], self.f_param), self.real_f(X[b], self.f_param)
         if f_a > f_b:
@@ -64,29 +61,35 @@ class instance_pref_generator:
         else:
             return b, a
 
-    def set_m_preference(self, X):
+    def set_m_preference(self, X, m):
         pref = []
-        for i in range(self.m):
+        for i in range(m):
             pref.append(self.add_a_pref(X, pref))
         return pref
 
-    def generate_X_pref(self):
-        X = self.generate_X()
-        D = self.set_m_preference(X)
+    def generate_X_pref(self, n, m, d):
+        X = self.generate_X(n, d)
+        D = self.set_m_preference(X, m)
         return X, D
 
+    def sample_datasets(self, n, d, m, mp):
+        train = self.generate_X_pref(n, m, d)
+        test = self.set_m_preference(train[0], mp)
+        return train, test
+
     def get_true_pref(self, X):
-        pref = np.zeros((self.n, self.n))
-        for i in range(self.n):
-            for j in range(self.n):
+        n = X.shape[0]
+        pref = np.zeros((n, n))
+        for i in range(n):
+            for j in range(n):
                 if self.real_f(X[i], self.f_param) > self.real_f(X[j], self.f_param):
                     pref[i, j] = 1
         return pref
 
 
 class label_pref_generator(instance_pref_generator):
-    def __init__(self, func, func_param, d, n, m):
-        super().__init__(func,func_param, d, n, m)
+    def __init__(self, func, func_param):
+        super().__init__(func,func_param)
         self.n_label = len(self.real_f)
 
     def add_a_pref(self, x, existing_pref, iter_max=10):
@@ -101,12 +104,13 @@ class label_pref_generator(instance_pref_generator):
         else:
             return b, a
 
-    def set_m_preference(self, X):
+    def set_m_preference(self, X, m):
         """
         m becomes the maximum number of edges to draw for each vector in X
         """
         pref = []
-        n_observed = np.random.randint(low=1, high=self.m+1, size=self.n)
+        n = X.shape[0]
+        n_observed = np.random.randint(low=1, high=m+1, size=n)
         for i in range(self.n):
             pref_i = []
             for j in range(n_observed[i]):
