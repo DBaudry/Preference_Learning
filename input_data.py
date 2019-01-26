@@ -1,19 +1,29 @@
 import numpy as np
 import copy
 import utils
-import itertools
 
 class pref_generator():
-    def __init__(self, dataset):
+    def __init__(self, dataset, n):
         self.X = utils.read_data(dataset)
+        nmax = self.X.shape[0] if n == -1 else n
+        self.X = self.X.iloc[:nmax, :]
         self.n, self.d = self.X.shape
-        self.pairs_index = np.array([p for p in itertools.combinations(range(self.n), 2)])
+        self.pairs_index = utils.combinations(self.n)
 
-    def train_test_generator(self, m):
-        replace = True if (m > self.n * (self.n - 1) / 2) else False
+    def train_generator(self, m):
+        replace = True if m > len(self.pairs_index) else False
         idx = np.random.choice(len(self.pairs_index), m, replace=replace)
         pairs = self.pairs_index[idx]
-        return tuple(map(tuple, pairs))
+        self.training_pairs = tuple(map(tuple, pairs))
+        return self.training_pairs
+
+    def test_generator(self, m):
+        replace = True if m > len(self.pairs_index) else False
+        self.pairs_index = np.array([(i, j) for (i, j) in self.pairs_index if (i, j) not in self.training_pairs])
+        idx = np.random.choice(len(self.pairs_index), m, replace=replace)
+        pairs = self.pairs_index[idx]
+        self.testing_pairs = tuple(map(tuple, pairs))
+        return self.testing_pairs
 
     def draw_preference(self, pairs):
         pref = []
@@ -25,17 +35,22 @@ class pref_generator():
                 pref.append((b, a))
         return pref
 
-    def get_input(self, m):
-        pairs = self.train_test_generator(m)
-        pref = self.draw_preference(pairs)
-        self.indices = np.unique(pairs)
-        data = self.X.iloc[self.indices, :-1]
+    def get_input_train(self, m):
+        pairs = self.train_generator(m)
+        pref, self.indices = utils.reshape_pref(self.draw_preference(pairs))
+        data = self.X.iloc[self.indices, :]
+        return [np.array(data), pref]
+
+    def get_input_test(self, m):
+        pairs = self.test_generator(m)
+        pref, self.indices = utils.reshape_pref(self.draw_preference(pairs))
+        data = self.X.iloc[self.indices, :]
         return [np.array(data), pref]
 
     def get_true_pref(self, data):
         p = data.shape[0]
-        X = np.array(self.X)
         real_pref = np.zeros((p, p))
+        X = np.array(self.X)
         for i in range(p):
             for j in range(p):
                 if X[self.indices[i], -1] > X[self.indices[j], -1]:

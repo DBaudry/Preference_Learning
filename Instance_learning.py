@@ -5,6 +5,9 @@ from tqdm import tqdm
 from scipy.optimize import minimize
 from utils import distance, n_pdf, gaussian_kernel
 
+Nfeval = 1
+S = 0
+
 class learning_instance_preference:
     def __init__(self, inputs, K, sigma):
         self.init_param(inputs, K, sigma)
@@ -74,6 +77,9 @@ class learning_instance_preference:
         check_1 = 1 if self.D[k][1] == i else 0
         return check_0 - check_1
 
+    def partial_df(self, k, i):  # for the log_phi part
+        return -self.s(k, i) / np.sqrt(2) / self.sigma * n_pdf(self.z[k]) / self.phi[k]
+
     def compute_grad_S(self, y):
         """
         :param y: vector of size n
@@ -81,11 +87,7 @@ class learning_instance_preference:
         """
         if distance(y, self.current_y) != 0:
             self.compute_z_phi(y)
-
-        def partial_df(k, i):  #for the log_phi part
-            return -self.s(k, i)/np.sqrt(2)/self.sigma*n_pdf(self.z[k])/self.phi[k]
-
-        phi_grad = np.array([sum([partial_df(k, i) for k in range(self.m)]) for i in range(self.n)])
+        phi_grad = np.array([sum([self.partial_df(k, i) for k in range(self.m)]) for i in range(self.n)])
         return phi_grad+np.dot(self.inv_cov, y)
 
     def compute_Hessian_S(self, y):
@@ -95,7 +97,6 @@ class learning_instance_preference:
         """
         if distance(y, self.current_y) != 0:
             self.compute_z_phi(y)
-
         def partial_d2f(k, i, j):
             s_ij = self.s(k, i)*self.s(k, j)/2/self.sigma**2
             nk = n_pdf(self.z[k])/self.phi[k]
@@ -105,14 +106,27 @@ class learning_instance_preference:
         self.nu = phi_Hess
         return phi_Hess+self.inv_cov
 
+    def callbackF(self, Xi):
+        global Nfeval
+        global S
+        if Nfeval == 1:
+            S = self.compute_S(Xi)
+            print('Iteration {0:2.0f} : S(y)={1:3.6f}'.format(Nfeval, S))
+        else:
+            s_next = self.compute_S(Xi)
+            print('Iteration {0:2.0f} : S(y)={1:3.6f}, tol={2:0.6f}'.format(Nfeval, s_next, abs(S-s_next)))
+            S = s_next
+        Nfeval += 1
+
     def compute_MAP(self, y):
         """
         :param y: Starting vector for the minimization program
         :return: A scipy OptimizeResult dict with results after the minimization
         (convergence, last value, jacobian,...)
         """
+        print('Starting gradient descent:\n')
         return minimize(self.compute_S, y, method='Newton-CG', jac=self.compute_grad_S,
-                        hess=self.compute_Hessian_S, tol=1e-4)
+                        hess=self.compute_Hessian_S, tol=1e-4, callback=self.callbackF)
 
     def evidence_approx(self, y):
         """
