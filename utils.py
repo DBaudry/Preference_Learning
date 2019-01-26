@@ -52,9 +52,8 @@ def gaussian_kernel(x, y, K):
 
 
 def reshape_pref(pref):
-    m = len(pref)
     indices = np.unique(pref)
-    mapping = {p: i for i, p in zip(range(m), indices)}
+    mapping = {p: i for i, p in zip(range(len(indices)), indices)}
     new_pref = []
     for p in pref:
         new_pref.append((mapping[p[0]], mapping[p[1]]))
