@@ -2,10 +2,12 @@ import pandas as pd
 import os
 import numpy as np
 import itertools
+from sklearn import preprocessing
 
 targets = {'abalone': 'rings', 'diabetes': 'c_peptide', 'housing': 'class',
            'machine': 'class', 'pyrim': 'activity', 'r_wpbc': 'Time', 'triazines': 'activity'}
 
+min_max_scaler = preprocessing.MinMaxScaler()
 
 def combinations(n):
     a = [[(i, j) for i in range(j)] for j in range(n)]
@@ -25,6 +27,7 @@ def read_data(data, n, d):
     idx = [col.index(i) for i in col if i != target] + [col.index(target)]
     X = pd.get_dummies(X)
     X = X.iloc[:, idx]
+    X = pd.DataFrame(min_max_scaler.fit_transform(X), columns=X.columns, index=X.index)
     nmax = X.shape[0] if n == -1 else n
     dmax = X.shape[1] if d == -1 else d
     try:
