@@ -12,13 +12,12 @@ def combinations(n):
     return np.array(list(itertools.chain.from_iterable(a)))
 
 
-def read_data(data):
+def read_data(data, n, d):
     """
     Create a dataFrame containing both data (using file .data) and columns' labels (using file .domain)
     :param data: string, choice between abalone, diabetes, housing, machine, pyrim, r_wpbc, triazines
     :return: pandas dataFrame
     """
-    print('Dataset: '+data+'...\n')
     X = pd.read_csv(os.path.join('./Data/', data+'.data'), header=None, sep=',')
     col = list(pd.read_csv(os.path.join('./Data/', data+'.domain'), header=None, sep=':').iloc[:, 0].apply(lambda x: x.replace('\t', '').replace(' ','')))
     X.columns = col
@@ -26,7 +25,16 @@ def read_data(data):
     idx = [col.index(i) for i in col if i != target] + [col.index(target)]
     X = pd.get_dummies(X)
     X = X.iloc[:, idx]
-    return X
+    nmax = X.shape[0] if n == -1 else n
+    dmax = X.shape[1] if d == -1 else d
+    try:
+        X = X.iloc[:nmax, [i for i in range(dmax)] + [-1]]
+        print('Dataset ' + data + ' of size ({}, {})...\n'.format(X.shape[0], X.shape[1]))
+        return X
+    except:
+        print('You put n_obs = {} and n_features = {}, \nPlease put n_obs < {} and n_features < {}'.format(n, d, X.shape[0], X.shape[1]))
+        return None
+
 
 
 def distance(x, y):
