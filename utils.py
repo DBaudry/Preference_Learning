@@ -56,6 +56,5 @@ def reshape_pref(pref):
     mapping = {p: i for i, p in zip(range(len(indices)), indices)}
     new_pref = []
     for p in pref:
-        print(p)
         new_pref.append((mapping[p[0]], mapping[p[1]]))
     return np.array(new_pref), indices
