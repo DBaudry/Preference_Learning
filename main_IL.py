@@ -20,11 +20,10 @@ if __name__ == '__main__':
         xp.xp_random_dataset(generator, model, train, test, K, sigma, gridsearch=False)
 
     if check_real_data:
-        generator = data.pref_generator('diabetes')
-        train = generator.get_input(200)
-        test = generator.draw_preference(generator.train_test_generator(800))
+        generator = data.pref_generator('diabetes', -1)
+        train = generator.get_input_train(100)
+        test = generator.get_input_test(1000)
         K, sigma = 10., 0.1 # Best parameters with the grid below
         # K, sigma = [0.1, 1., 5., 10.], [0.01, 0.1, 1.]
         model = IL.learning_instance_preference(inputs=train, K=K, sigma=sigma)
         xp.xp_random_dataset(generator, model, train, test, K, sigma, gridsearch=False)
-

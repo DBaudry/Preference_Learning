@@ -1,6 +1,15 @@
 import pandas as pd
 import os
 import numpy as np
+import itertools
+
+targets = {'abalone': 'rings', 'diabetes': 'c_peptide', 'housing': 'class',
+           'machine': 'class', 'pyrim': 'activity', 'r_wpbc': 'Time', 'triazines': 'activity'}
+
+
+def combinations(n):
+    a = [[(i, j) for i in range(j)] for j in range(n)]
+    return np.array(list(itertools.chain.from_iterable(a)))
 
 
 def read_data(data):
@@ -9,12 +18,14 @@ def read_data(data):
     :param data: string, choice between abalone, diabetes, housing, machine, pyrim, r_wpbc, triazines
     :return: pandas dataFrame
     """
+    print('Dataset: '+data+'...\n')
     X = pd.read_csv(os.path.join('./Data/', data+'.data'), header=None, sep=',')
-    col = pd.read_csv(os.path.join('./Data/', data+'.domain'), header=None, sep=':')
-    X.columns = list(col.iloc[:, 0])
-    for i, m in enumerate(X.dtypes):
-        if m in ['object', 'str']:
-            pd.to_numeric(X.iloc[i, :])
+    col = list(pd.read_csv(os.path.join('./Data/', data+'.domain'), header=None, sep=':').iloc[:, 0].apply(lambda x: x.replace('\t', '').replace(' ','')))
+    X.columns = col
+    target = targets[data]
+    idx = [col.index(i) for i in col if i != target] + [col.index(target)]
+    X = pd.get_dummies(X)
+    X = X.iloc[:, idx]
     return X
 
 
@@ -30,3 +41,13 @@ def n_pdf(x):
 
 def gaussian_kernel(x, y, K):
     return np.exp(-K/2.*np.sum((x-y)**2))
+
+
+def reshape_pref(pref):
+    m = len(pref)
+    indices = np.unique(pref)
+    mapping = {p: i for i, p in zip(range(m), indices)}
+    new_pref = []
+    for p in pref:
+        new_pref.append((mapping[p[0]], mapping[p[1]]))
+    return np.array(new_pref), indices

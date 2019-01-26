@@ -21,7 +21,7 @@ def xp_random_dataset(gen, model, train, test, K, sigma, gridsearch=False):
     evidence = model.evidence_approx(MAP['x'])
     pref_ap = model.get_train_pref(MAP['x'])
     score_train = model.score(pref_ap, train_pref)
-    score, proba = model.predict((train[0], test), MAP['x'])
+    score, proba = model.predict(test, MAP['x'])
     print('Convergence of the minimizer of S : {}'.format(MAP['success']))
     print('Maximum a Posteriori : {}'.format(MAP['x']))
     print('Score on train: {}'.format(score_train))
