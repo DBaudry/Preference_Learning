@@ -3,10 +3,8 @@ import copy
 import utils
 
 class pref_generator():
-    def __init__(self, dataset, n):
-        self.X = utils.read_data(dataset)
-        nmax = self.X.shape[0] if n == -1 else n
-        self.X = self.X.iloc[:nmax, :]
+    def __init__(self, dataset, n=-1, d=-1):
+        self.X = utils.read_data(dataset, n, d)
         self.n, self.d = self.X.shape
         self.pairs_index = utils.combinations(self.n)
 
@@ -18,8 +16,8 @@ class pref_generator():
         return self.training_pairs
 
     def test_generator(self, m):
-        replace = True if m > len(self.pairs_index) else False
         self.pairs_index = np.array([(i, j) for (i, j) in self.pairs_index if (i, j) not in self.training_pairs])
+        replace = True if m > len(self.pairs_index) else False
         idx = np.random.choice(len(self.pairs_index), m, replace=replace)
         pairs = self.pairs_index[idx]
         self.testing_pairs = tuple(map(tuple, pairs))
@@ -37,14 +35,14 @@ class pref_generator():
 
     def get_input_train(self, m):
         pairs = self.train_generator(m)
-        pref, self.indices = utils.reshape_pref(self.draw_preference(pairs))
-        data = self.X.iloc[self.indices, :]
+        pref, self.training_indices = utils.reshape_pref(self.draw_preference(pairs))
+        data = self.X.iloc[self.training_indices , :]
         return [np.array(data), pref]
 
     def get_input_test(self, m):
         pairs = self.test_generator(m)
-        pref, self.indices = utils.reshape_pref(self.draw_preference(pairs))
-        data = self.X.iloc[self.indices, :]
+        pref, self.testing_indices = utils.reshape_pref(self.draw_preference(pairs))
+        data = self.X.iloc[self.testing_indices, :]
         return [np.array(data), pref]
 
     def get_true_pref(self, data):
@@ -53,7 +51,7 @@ class pref_generator():
         X = np.array(self.X)
         for i in range(p):
             for j in range(p):
-                if X[self.indices[i], -1] > X[self.indices[j], -1]:
+                if X[self.training_indices[i], -1] > X[self.training_indices[j], -1]:
                     real_pref[i, j] = 1
         return real_pref
 
