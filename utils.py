@@ -3,9 +3,14 @@ import os
 import numpy as np
 import itertools
 from sklearn import preprocessing
+import warnings
+warnings.filterwarnings("ignore")
 
 targets = {'abalone': 'rings', 'diabetes': 'c_peptide', 'housing': 'class',
            'machine': 'class', 'pyrim': 'activity', 'r_wpbc': 'Time', 'triazines': 'activity'}
+
+dataset_shapes = {'abalone': (4177, 9), 'diabetes': (43, 3), 'housing': (506, 14),
+                  'machine': (209, 7), 'pyrim': (74, 28), 'r_wpbc': (194, 33), 'triazines': (186, 61)}
 
 min_max_scaler = preprocessing.MinMaxScaler()
 
@@ -25,19 +30,12 @@ def read_data(data, n, d):
     X.columns = col
     target = targets[data]
     idx = [col.index(i) for i in col if i != target] + [col.index(target)]
-    X = pd.get_dummies(X)
-    X = X.iloc[:, idx]
+    X = pd.get_dummies(X).iloc[:, idx]
     X = pd.DataFrame(min_max_scaler.fit_transform(X), columns=X.columns, index=X.index)
-    nmax = X.shape[0] if n == -1 else n
-    dmax = X.shape[1] if d == -1 else d
-    try:
-        X = X.iloc[:nmax, [i for i in range(dmax)] + [-1]]
-        print('Dataset ' + data + ' of size ({}, {})...\n'.format(X.shape[0], X.shape[1]))
-        return X
-    except:
-        print('You put n_obs = {} and n_features = {}, \nPlease put n_obs < {} and n_features < {}'.format(n, d, X.shape[0], X.shape[1]))
-        return None
-
+    n0 = X.shape[0] if n == -1 else n
+    d0 = X.shape[1] if d == -1 else d
+    print('\nDataset ' + data + ' of size ({}, {}) truncated to size ({}, {})'.format(X.shape[0], X.shape[1], n0, d0))
+    return X
 
 
 def distance(x, y):
