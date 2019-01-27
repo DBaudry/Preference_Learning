@@ -5,7 +5,9 @@ import utils
 class pref_generator():
     def __init__(self, dataset, n=-1, d=-1):
         self.X = utils.read_data(dataset, n, d)
-        self.n, self.d = self.X.shape
+        self.nmax, self.dmax = self.X.shape
+        self.n = self.nmax if n == -1 else n
+        self.d = self.dmax if d == -1 else d
         self.pairs_index = utils.combinations(self.n)
 
     def train_generator(self, m):
@@ -16,7 +18,7 @@ class pref_generator():
         return self.training_pairs
 
     def test_generator(self, m):
-        self.pairs_index = np.array([(i, j) for (i, j) in self.pairs_index if (i, j) not in self.training_pairs])
+        self.pairs_index = np.array([(i, j) for (i, j) in utils.combinations(self.nmax) if (i, j) not in self.training_pairs])
         replace = True if m > len(self.pairs_index) else False
         idx = np.random.choice(len(self.pairs_index), m, replace=replace)
         pairs = self.pairs_index[idx]
@@ -36,13 +38,13 @@ class pref_generator():
     def get_input_train(self, m):
         pairs = self.train_generator(m)
         pref, self.training_indices = utils.reshape_pref(self.draw_preference(pairs))
-        data = self.X.iloc[self.training_indices , :]
+        data = self.X.iloc[self.training_indices, [i for i in range(self.d-1)] + [-1]]
         return [np.array(data), pref]
 
     def get_input_test(self, m):
         pairs = self.test_generator(m)
         pref, self.testing_indices = utils.reshape_pref(self.draw_preference(pairs))
-        data = self.X.iloc[self.testing_indices, :]
+        data = self.X.iloc[self.testing_indices, [i for i in range(self.d-1)] + [-1]]
         return [np.array(data), pref]
 
     def get_true_pref(self, data):
@@ -74,7 +76,7 @@ class instance_pref_generator:
 
     def add_a_pref(self, X, existing_pref, iter_max=10):
         n_iter, n = 0, X.shape[0]
-        a, b=self.draw_preference(n)
+        a, b = self.draw_preference(n)
         while (a, b) in existing_pref or (b, a) in existing_pref and n_iter < iter_max:
             a, b = self.draw_preference(n)
             n_iter += 1
@@ -112,7 +114,7 @@ class instance_pref_generator:
 
 class label_pref_generator(instance_pref_generator):
     def __init__(self, func, func_param):
-        super().__init__(func,func_param)
+        super().__init__(func, func_param)
         self.n_label = len(self.real_f)
 
     def add_a_pref(self, x, existing_pref, iter_max=10):
@@ -134,7 +136,7 @@ class label_pref_generator(instance_pref_generator):
         pref = []
         n = X.shape[0]
         n_observed = np.random.randint(low=1, high=m+1, size=n)
-        for i in range(self.n):
+        for i in range(n):
             pref_i = []
             for j in range(n_observed[i]):
                 pref_i.append(self.add_a_pref(X[i], pref_i))
