@@ -9,13 +9,10 @@ warnings.filterwarnings("ignore")
 targets = {'abalone': 'rings', 'diabetes': 'c_peptide', 'housing': 'class',
            'machine': 'class', 'pyrim': 'activity', 'r_wpbc': 'Time', 'triazines': 'activity'}
 
-dataset_shapes = {'abalone': (4177, 9), 'diabetes': (43, 3), 'housing': (506, 14),
-                  'machine': (209, 7), 'pyrim': (74, 28), 'r_wpbc': (194, 33), 'triazines': (186, 61)}
-
 min_max_scaler = preprocessing.MinMaxScaler()
 
-def combinations(n):
-    a = [[(i, j) for i in range(j)] for j in range(n)]
+def combinations(n2, n1=0):
+    a = [[(i, j) for i in range(n1, j)] for j in range(n1, n2)]
     return np.array(list(itertools.chain.from_iterable(a)))
 
 
@@ -59,6 +56,9 @@ def reshape_pref(pref):
     for p in pref:
         new_pref.append((mapping[p[0]], mapping[p[1]]))
     return np.array(new_pref), indices
+
+def ratio_n_obs(m_pref):
+    return int(np.sqrt(2*m_pref))
 
 
 def get_alpha(dim):

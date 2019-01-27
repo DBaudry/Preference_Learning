@@ -41,6 +41,7 @@ if __name__ == '__main__':
         # K, sigma = [0.1, 1., 5., 10.], [0.01, 0.1, 1.]
         model = IL.learning_instance_preference(inputs=train, K=K, sigma=sigma)
         xp.run_instance_xp(generator, model, train, test, K, sigma, gridsearch=False, show_results=True)
+
     if check_authors_expe:
         K, sigma = [0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 5, 10], [0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 5, 10]
         results = {}
@@ -54,7 +55,7 @@ if __name__ == '__main__':
                 generator = data.pref_generator(m, n_obs, n_features)
                 train, test = generator.get_input_train(n_pref_train), generator.get_input_test(n_pref_test)
                 model = IL.learning_instance_preference(inputs=train, K=K, sigma=sigma)
-                results = xp.xp_random_dataset(generator, model, train, test, K, sigma, gridsearch=True, show_results=False)
+                results = xp.run_instance_xp(generator, model, train, test, K, sigma, gridsearch=True, show_results=False)
                 score_train.append(1-results['score_train'])
                 score_test.append(1-results['score_test'])
             m_train, std_train, m_test, std_test = np.mean(score_train), np.std(score_train), np.mean(score_test), np.std(score_test)
