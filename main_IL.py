@@ -31,7 +31,7 @@ if __name__ == '__main__':
         K, sigma = 10., 0.1  # Best parameters with the grid below
         # K, sigma = [0.1, 1., 5., 10.], [0.01, 0.1, 1.]
         model = IL.learning_instance_preference(inputs=train, K=K, sigma=sigma)
-        xp.run_instance_xp(generator, model, train, test, K, sigma, 
+        xp.run_instance_xp(generator, model, train, test, K, sigma,
                            gridsearch=False, show_results=True)
         
     if check_authors_expe:

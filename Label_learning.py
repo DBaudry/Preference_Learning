@@ -5,6 +5,7 @@ import copy
 from tqdm import tqdm
 from scipy.optimize import minimize
 from utils import distance, n_pdf, gaussian_kernel
+from scipy.linalg import block_diag
 
 Nfeval = 1
 S = 0
@@ -122,14 +123,8 @@ class learning_label_preference:
                 nk = n_pdf(self.z[index])/self.phi[index]
                 Hess_phi[i][pref[0], pref[1]] += -1/2/self.sigma**2*(nk**2+self.z[index]*nk)
                 Hess_phi[i][pref[1], pref[0]] += -1/2/self.sigma**2*(nk**2+self.z[index]*nk)
-        Hess_phi_all = np.zeros((self.n_labels*self.n, self.n_labels*self.n))
-        for i in range(self.n):
-            idx = i*self.n
-            Hess_phi_all[idx:idx+self.n_labels, idx:idx+self.n_labels] = Hess_phi[i]
-        Hess_cov = np.zeros((self.n_labels*self.n, self.n_labels*self.n))
-        for a in range(self.n_labels):
-            idx = a*self.n_labels
-            Hess_cov[idx:idx+self.n, idx:idx+self.n] = self.all_inv_cov[a]
+        Hess_phi_all = block_diag(*Hess_phi)
+        Hess_cov = block_diag(*self.all_inv_cov)
         return Hess_phi_all + Hess_cov
 
     def callbackF(self, Xi):
@@ -153,6 +148,16 @@ class learning_label_preference:
         print('Starting gradient descent:\n')
         return minimize(self.compute_S, y, method='Newton-CG', jac=self.compute_grad_S,
                         hess=self.compute_Hessian_S, tol=1e-3, callback=self.callbackF)
+
+    def evidence_approx(self, y):
+        """
+        :param y: a vector with n values of f(x) (for x in self.X)
+        :return: Laplace approximation of the evidence of the model with y
+        """
+        S, H = self.compute_S(y), self.compute_Hessian_S(y)
+        cov = block_diag(*self.all_cov)
+        denom = np.linalg.det(np.dot(cov, H))
+        return np.log(np.exp(-S)/np.sqrt(np.abs(denom)))
 
     def predict(self, data, map):
         pass
