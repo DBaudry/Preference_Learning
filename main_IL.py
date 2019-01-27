@@ -18,8 +18,8 @@ ratios = {'pyrim': 5.23, 'triazines': 7.59, 'machine': 6.60, 'housing': 13.52, '
 np.random.seed(42311)
 
 check_random = False
-check_real_data = False
-check_authors_expe, n_expe = True, 2
+check_real_data = True
+check_authors_expe, n_expe = False, 2
 
 if __name__ == '__main__':
     if check_random:
@@ -29,7 +29,7 @@ if __name__ == '__main__':
         train, test = generator.sample_datasets(n, d, m, mp)
         K, sigma = 10., 0.1
         model = IL.learning_instance_preference(inputs=train, K=K, sigma=sigma)
-        xp.xp_random_dataset(generator, model, train, test, K, sigma, gridsearch=False)
+        xp.run_instance_xp(generator, model, train, test, K, sigma, gridsearch=False)
 
     if check_real_data:
         n_obs, n_features = 20, -1  # put to -1, -1 if you want the whole data set
@@ -37,12 +37,10 @@ if __name__ == '__main__':
         generator = data.pref_generator('housing', n_obs, n_features)
         train = generator.get_input_train(n_pref_train)
         test = generator.get_input_test(n_pref_test)
-        K, sigma = 10., 0.1 # Best parameters with the grid below
+        K, sigma = 10., 0.1  # Best parameters with the grid below
         # K, sigma = [0.1, 1., 5., 10.], [0.01, 0.1, 1.]
         model = IL.learning_instance_preference(inputs=train, K=K, sigma=sigma)
-        xp.xp_random_dataset(generator, model, train, test, K, sigma, gridsearch=False)
-
-
+        xp.run_instance_xp(generator, model, train, test, K, sigma, gridsearch=False, show_results=True)
     if check_authors_expe:
         K, sigma = [0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 5, 10], [0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 5, 10]
         results = {}
