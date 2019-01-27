@@ -9,8 +9,8 @@ from tqdm import tqdm
 np.random.seed(42311)
 
 check_random = False
-check_real_data = False
-check_authors_expe, n_expe = True, 2
+check_real_data = True
+check_authors_expe, n_expe = False, 2
 
 if __name__ == '__main__':
     if check_random:
@@ -31,7 +31,8 @@ if __name__ == '__main__':
         K, sigma = 10., 0.1  # Best parameters with the grid below
         # K, sigma = [0.1, 1., 5., 10.], [0.01, 0.1, 1.]
         model = IL.learning_instance_preference(inputs=train, K=K, sigma=sigma)
-        xp.run_instance_xp(generator, model, train, test, K, sigma, gridsearch=False)
+        xp.run_instance_xp(generator, model, train, test, K, sigma, 
+                           gridsearch=False, show_results=True)
         
     if check_authors_expe:
         authors_n_pref = {'pyrim': 100, 'triazines': 300, 'machine': 500, 'housing': 700, 'abalone': 1000}
