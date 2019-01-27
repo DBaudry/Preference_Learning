@@ -6,6 +6,7 @@ from scipy.optimize import minimize
 from utils import distance, n_pdf, gaussian_kernel
 
 
+
 class learning_instance_preference:
     def __init__(self, inputs, K, sigma):
         self.init_param(inputs, K, sigma)

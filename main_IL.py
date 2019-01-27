@@ -20,7 +20,7 @@ if __name__ == '__main__':
         train, test = generator.sample_datasets(n, d, m, mp)
         K, sigma = 10., 0.1
         model = IL.learning_instance_preference(inputs=train, K=K, sigma=sigma)
-        xp.xp_random_dataset(generator, model, train, test, K, sigma, gridsearch=False)
+        xp.run_instance_xp(generator, model, train, test, K, sigma, gridsearch=False)
 
     if check_real_data:
         n_obs, n_features = 20, -1  # put to -1, -1 if you want the whole data set
@@ -28,11 +28,11 @@ if __name__ == '__main__':
         generator = data.pref_generator('housing', n_obs, n_features)
         train = generator.get_input_train(n_pref_train)
         test = generator.get_input_test(n_pref_test)
-        K, sigma = 10., 0.1 # Best parameters with the grid below
+        K, sigma = 10., 0.1  # Best parameters with the grid below
         # K, sigma = [0.1, 1., 5., 10.], [0.01, 0.1, 1.]
         model = IL.learning_instance_preference(inputs=train, K=K, sigma=sigma)
-        xp.xp_random_dataset(generator, model, train, test, K, sigma, gridsearch=False)
-
+        xp.run_instance_xp(generator, model, train, test, K, sigma, gridsearch=False)
+        
     if check_authors_expe:
         authors_n_pref = {'pyrim': 100, 'triazines': 300, 'machine': 500, 'housing': 700, 'abalone': 1000}
         K, sigma = 10., 0.1
