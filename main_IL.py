@@ -9,7 +9,7 @@ from utils import ratio_n_obs
 dataset_shapes = {'abalone': (4177, 9), 'diabetes': (43, 3), 'housing': (506, 14),
                   'machine': (209, 7), 'pyrim': (74, 28), 'r_wpbc': (194, 33), 'triazines': (186, 61)}
 
-authors_n_pref = {'housing': 700} #'pyrim': 100, 'triazines': 300 , 'machine':500, 'housing': 700, 'abalone': 1000}
+authors_n_pref = {'abalone': 1000}  #'pyrim': 100, 'triazines': 300 , 'machine':500, 'housing': 700, 'abalone': 1000}
 
 best_parameters = {'pyrim': (0.005, 0.007), 'triazines': (0.007, 0.006), 'machine': 500, 'housing': 700, 'abalone': 1000}
 
@@ -18,8 +18,8 @@ ratios = {'pyrim': 5.23, 'triazines': 7.59, 'machine': 6.60, 'housing': 13.52, '
 np.random.seed(42311)
 
 check_random = False
-check_real_data = True
-check_authors_expe, n_expe = False, 2
+check_real_data = False
+check_authors_expe, n_expe = True, 1
 
 if __name__ == '__main__':
     if check_random:
