@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def run_instance_xp(gen, model, train, test, K, sigma, gridsearch=False):
+def run_instance_xp(gen, model, train, test, K, sigma, gridsearch=False, show_results=True):
     """
     :param model: instance_pref_generator instance for a given function
     :param train: train set (data+pref)
@@ -10,6 +10,7 @@ def run_instance_xp(gen, model, train, test, K, sigma, gridsearch=False):
     :param sigma: Error variance. Float, list of floats if gridsearch
     :param gridsearch: If true compute a gridsearch for the best parameters for K and sigma
     based on the model evidence
+    :param show_results: display the results
     :return: Dict: MAP obtained with the train set, prediction with test set
     """
     train_pref = gen.get_true_pref(train[0])
