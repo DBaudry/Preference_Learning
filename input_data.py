@@ -77,7 +77,7 @@ class instance_pref_generator:
 
     def add_a_pref(self, X, existing_pref, iter_max=10):
         n_iter, n = 0, X.shape[0]
-        a, b=self.draw_preference(n)
+        a, b = self.draw_preference(n)
         while (a, b) in existing_pref or (b, a) in existing_pref and n_iter < iter_max:
             a, b = self.draw_preference(n)
             n_iter += 1
@@ -115,7 +115,7 @@ class instance_pref_generator:
 
 class label_pref_generator(instance_pref_generator):
     def __init__(self, func, func_param):
-        super().__init__(func,func_param)
+        super().__init__(func, func_param)
         self.n_label = len(self.real_f)
 
     def add_a_pref(self, x, existing_pref, iter_max=10):
@@ -137,7 +137,7 @@ class label_pref_generator(instance_pref_generator):
         pref = []
         n = X.shape[0]
         n_observed = np.random.randint(low=1, high=m+1, size=n)
-        for i in range(self.n):
+        for i in range(n):
             pref_i = []
             for j in range(n_observed[i]):
                 pref_i.append(self.add_a_pref(X[i], pref_i))

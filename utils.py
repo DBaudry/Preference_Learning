@@ -59,3 +59,9 @@ def reshape_pref(pref):
 
 def ratio_n_obs(m_pref):
     return int(np.sqrt(2*m_pref))
+
+
+def get_alpha(dim):
+    rho = np.random.uniform()
+    coeff = np.array([rho**(i+1) for i in range(dim)])
+    return np.random.permutation(coeff/coeff.sum())
