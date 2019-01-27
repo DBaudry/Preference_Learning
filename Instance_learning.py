@@ -8,6 +8,7 @@ from utils import distance, n_pdf, gaussian_kernel
 Nfeval = 1
 S = 0
 
+
 class learning_instance_preference:
     def __init__(self, inputs, K, sigma):
         self.init_param(inputs, K, sigma)

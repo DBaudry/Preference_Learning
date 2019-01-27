@@ -61,3 +61,9 @@ def reshape_pref(pref):
     for p in pref:
         new_pref.append((mapping[p[0]], mapping[p[1]]))
     return np.array(new_pref), indices
+
+
+def get_alpha(dim):
+    rho = np.random.uniform()
+    coeff = np.array([rho**(i+1) for i in range(dim)])
+    return np.random.permutation(coeff/coeff.sum())
