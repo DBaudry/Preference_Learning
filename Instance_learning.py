@@ -5,13 +5,13 @@ from tqdm import tqdm
 from scipy.optimize import minimize
 from utils import distance, n_pdf, gaussian_kernel
 
-Nfeval = 1
-S = 0
 
 
 class learning_instance_preference:
     def __init__(self, inputs, K, sigma):
         self.init_param(inputs, K, sigma)
+        self.Nfeval = 1
+        self.S = 0
 
     def init_param(self, inputs, K, sigma):
         """
@@ -108,16 +108,14 @@ class learning_instance_preference:
         return phi_Hess+self.inv_cov
 
     def callbackF(self, Xi):
-        global Nfeval
-        global S
-        if Nfeval == 1:
-            S = self.compute_S(Xi)
-            print('Iteration {0:2.0f} : S(y)={1:3.6f}'.format(Nfeval, S))
+        if self.Nfeval == 1:
+            self.S = self.compute_S(Xi)
+            print('Iteration {0:2.0f} : S(y)={1:3.6f}'.format(self.Nfeval, self.S))
         else:
             s_next = self.compute_S(Xi)
-            print('Iteration {0:2.0f} : S(y)={1:3.6f}, tol={2:0.6f}'.format(Nfeval, s_next, abs(S-s_next)))
-            S = s_next
-        Nfeval += 1
+            print('Iteration {0:2.0f} : S(y)={1:3.6f}, tol={2:0.6f}'.format(self.Nfeval, s_next, abs(self.S-s_next)))
+            self.S = s_next
+        self.Nfeval += 1
 
     def compute_MAP(self, y):
         """
@@ -125,7 +123,7 @@ class learning_instance_preference:
         :return: A scipy OptimizeResult dict with results after the minimization
         (convergence, last value, jacobian,...)
         """
-        print('Starting gradient descent:\n')
+        print('Starting gradient descent:')
         return minimize(self.compute_S, y, method='Newton-CG', jac=self.compute_grad_S,
                         hess=self.compute_Hessian_S, tol=1e-4, callback=self.callbackF)
 
@@ -181,8 +179,6 @@ class learning_instance_preference:
         mu_star = np.dot(kt.T, np.dot(self.inv_cov, f_map))
         s_star = sigma_t-np.dot(np.dot(kt.T, M), kt)
         new_sigma = np.sqrt(2*self.sigma**2+s_star[0, 0]+s_star[1, 1]-2*s_star[0, 1])
-        if np.isnan(new_sigma):
-            print(r, s)
         return norm.cdf((mu_star[0]-mu_star[1])/new_sigma, loc=0, scale=1)
 
     def predict(self, test_set, f_map):
@@ -200,7 +196,7 @@ class learning_instance_preference:
         proba_pref = []
         self.compute_Hessian_S(f_map)
         M = np.linalg.inv(self.cov+np.linalg.inv(self.nu))
-        for p in tqdm(pref):
+        for p in pref:
             proba = self.predict_single_pref(X[p[0]], X[p[1]], f_map, M)
             proba_pref.append(proba)
             if proba > 0.5:

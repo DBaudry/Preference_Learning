@@ -22,13 +22,17 @@ def run_instance_xp(gen, model, train, test, K, sigma, gridsearch=False):
     pref_ap = model.get_train_pref(MAP['x'])
     score_train = model.score(pref_ap, train_pref)
     score, proba = model.predict(test, MAP['x'])
-    print('Convergence of the minimizer of S : {}'.format(MAP['success']))
-    print('Maximum a Posteriori : {}'.format(MAP['x']))
-    print('Score on train: {}'.format(score_train))
-    print('Evidence Approximation (p(D|f_MAP)) : {}'.format(evidence))
-    print('Probabilities : {}'.format(proba))
-    print('Score on test: {}'.format(score))
-    return {'MAP': MAP, 'score_train': score, 'evidence': evidence,
+    if show_results:
+        print('Convergence of the minimizer of S : {}'.format(MAP['success']))
+        print('Maximum a Posteriori : {}'.format(MAP['x']))
+        print('Score on train: {}'.format(score_train))
+        print('Evidence Approximation (p(D|f_MAP)) : {}'.format(evidence))
+        print('Probabilities : {}'.format(proba))
+        print('Score on test: {}'.format(score))
+    else:
+        print('Error on train: {:0.4f}, error on test: {:0.4f}\n______________________________________________\n'
+              ''.format(1-score_train, 1-score))
+    return {'MAP': MAP, 'score_train': score_train, 'evidence': evidence,
             'proba_test': proba, 'score_test': score}
 
 
