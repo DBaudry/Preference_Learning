@@ -2,7 +2,6 @@ import numpy as np
 from scipy.stats import multivariate_normal as mn
 from scipy.stats import norm
 import copy
-from tqdm import tqdm
 from scipy.optimize import minimize
 from utils import distance, n_pdf, gaussian_kernel
 from scipy.linalg import block_diag
