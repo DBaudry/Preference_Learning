@@ -16,12 +16,60 @@ targets = {'abalone': 'rings', 'diabetes': 'c_peptide', 'housing': 'class',
 min_max_scaler = preprocessing.MinMaxScaler()
 
 
+''' Short functions '''
+
 def combinations(n2, n1=0):
     a = [[(i, j) for i in range(n1, j)] for j in range(n1, n2)]
     return np.array(list(itertools.chain.from_iterable(a)))
 
 
-def read_data(data, n, d):
+def distance(x, y):
+    if x is None or y is None:
+        return np.inf
+    return np.sum((x-y)**2)
+
+
+def n_pdf(x):
+    return 1/np.sqrt(2*np.pi)*np.exp(-x**2/2)
+
+
+def gaussian_kernel(x, y, K):
+    return np.exp(-K/2.*np.sum((x-y)**2))
+
+
+def reshape_pref(pref):
+    indices = np.unique(pref)
+    mapping = {p: i for i, p in zip(range(len(indices)), indices)}
+    new_pref = []
+    for p in pref:
+        new_pref.append((mapping[p[0]], mapping[p[1]]))
+    return np.array(new_pref), indices
+
+
+def ratio_n_obs(m_pref):
+    return int(np.sqrt(2*m_pref))
+
+
+def gridsearchBool(param):
+    if param == 'best':
+        gridsearch=False
+    else:
+        if isinstance(param[0], list):
+            gridsearch=True
+        else:
+            gridsearch=False
+    return gridsearch
+
+
+def get_alpha(dim):
+    rho = np.random.uniform()
+    coeff = np.array([rho**(i+1) for i in range(dim)])
+    return np.random.permutation(coeff/coeff.sum())
+
+
+'''Function to read data for instance learning'''
+
+def read_data_IL(data, n, d):
     """
     Create a dataFrame containing both data (using file .data) and columns' labels (using file .domain)
     :param data: string, choice between abalone, diabetes, housing, machine, pyrim, r_wpbc, triazines
@@ -40,40 +88,56 @@ def read_data(data, n, d):
     return X
 
 
-def read_sushi(type):
-    users = pd.read_csv(os.path.join('./Data', 'sushi3.udata'), header=None, sep='\t')
-    pref = pd.read_csv(os.path.join('./Data', 'sushi3'+type+'.5000.10.order'), header=None, sep='\t')
+'''Function to read data for label learning'''
+
+
+def read_data_LL(dataset):
     graphs = []
-    for user in range(users.shape[0]):
-        graphs.append(compute_all_edges(to_preference(pref, user)))
-    return users, graphs
+    if dataset == 'sushia':
+        users = pd.read_csv(os.path.join('./Data', 'sushi3.udata'), header=None, sep='\t').iloc[:, 1:]
+        pref = pd.read_csv(os.path.join('./Data', 'sushi3a.5000.10.order'), header=None, sep='\t')
+        for user in range(users.shape[0]):
+            graphs.append(compute_all_edges(to_preference(pref, user)))
 
+    elif dataset == 'sushib':
+        users = pd.read_csv(os.path.join('./Data', 'sushi3.udata'), header=None, sep='\t').iloc[:, 1:]
+        pref = pd.read_csv(os.path.join('./Data', 'sushi3b.5000.10.order'), header=None, sep='\t')
+        for user in range(users.shape[0]):
+            graphs.append(compute_all_edges(to_preference(pref, user)))
 
-def read_bestmovies():
-    X = pd.read_csv(os.path.join('./Data/', 'top7movies.txt'), sep=',')
-    users = pd.get_dummies(X.loc[:, ['user_id', 'gender', 'age', 'latitude', 'longitude', 'occupations']])
-    graphs = []
-    for user in range(users.shape[0]):
-        graphs.append(get_pref_movies(X.iloc[user, -1]))
-    return users, graphs
-
-
-def read_data_label(dataset, type):
-    if dataset == 'sushi':
-        users, graphs = read_sushi(type)
     elif dataset == 'movies':
-        users, graphs = read_bestmovies()
+        X = pd.read_csv(os.path.join('./Data/', 'top7movies.txt'), sep=',')
+        users = pd.get_dummies(X.loc[:, ['user_id', 'gender', 'age', 'latitude', 'longitude', 'occupations']])
+        for user in range(users.shape[0]):
+            graphs.append(get_pref_movies(X.iloc[user, -1]))
+
+    elif dataset in ['german2005', 'german2009']:
+        X = pd.read_csv(os.path.join('./Data/', dataset+'.txt'), sep=',')
+        users = pd.get_dummies(X.loc[:, [col for col in X.columns if col not in ['State', 'Region', 'ranking']]])
+        for user in range(users.shape[0]):
+            graphs.append(get_pref_movies(X.iloc[user, -1]))
+
+    elif dataset == 'algae':
+        X = pd.read_csv(os.path.join('./Data/', 'algae.txt'), sep=',')
+        users = pd.get_dummies(X.iloc[:, :-2])
+        for user in range(users.shape[0]):
+            graphs.append(get_pref_movies(X.iloc[user, -1]))
+
     return users, graphs
 
 
-def train_test_split_sushi(users, graphs):
+def train_test_split(users, graphs):
     idx = np.random.choice(range(users.shape[0]), users.shape[0], replace=False)
+    X = pd.DataFrame(min_max_scaler.fit_transform(users), columns=users.columns, index=users.index)
     train_idx, test_idx = idx[0:int(0.75*len(idx))], idx[(int(0.75*len(idx))+1):]
-    users_train = users.iloc[train_idx, :]
-    users_test = users.iloc[test_idx, :]
+    users_train = X.iloc[train_idx, :]
+    users_test = X.iloc[test_idx, :]
     graphs_train, graphs_test = [graphs[i] for i in train_idx], [graphs[i] for i in test_idx]
     train, test = [np.array(users_train), graphs_train], [np.array(users_test), graphs_test]
     return train, test
+
+
+''' Functions to build preferences graphs'''
 
 
 def to_preference(data, user):
@@ -141,47 +205,4 @@ def pipeline_graph(data, user, mode):
     eval('G.add_edges_from(' + mode + '(a))')
     draw_graph(G, user, mode, a)
 
-
-def distance(x, y):
-    if x is None or y is None:
-        return np.inf
-    return np.sum((x-y)**2)
-
-
-def n_pdf(x):
-    return 1/np.sqrt(2*np.pi)*np.exp(-x**2/2)
-
-
-def gaussian_kernel(x, y, K):
-    return np.exp(-K/2.*np.sum((x-y)**2))
-
-
-def reshape_pref(pref):
-    indices = np.unique(pref)
-    mapping = {p: i for i, p in zip(range(len(indices)), indices)}
-    new_pref = []
-    for p in pref:
-        new_pref.append((mapping[p[0]], mapping[p[1]]))
-    return np.array(new_pref), indices
-
-
-def ratio_n_obs(m_pref):
-    return int(np.sqrt(2*m_pref))
-
-
-def gridsearchBool(param):
-    if param == 'best':
-        gridsearch=False
-    else:
-        if isinstance(param[0], list):
-            gridsearch=True
-        else:
-            gridsearch=False
-    return gridsearch
-
-
-def get_alpha(dim):
-    rho = np.random.uniform()
-    coeff = np.array([rho**(i+1) for i in range(dim)])
-    return np.random.permutation(coeff/coeff.sum())
 
