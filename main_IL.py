@@ -9,7 +9,6 @@ import utils
 check_random = False
 check_real_data = False
 check_authors_expe = False
-check_label = True
 
 if __name__ == '__main__':
     if check_random:
@@ -46,8 +45,3 @@ if __name__ == '__main__':
                  [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 50, 100]]
         xp.run_instance_xp_authors(param=param, n_expe=n_expe, datasets=datasets, show_results=True, print_callback=False)
 
-    if check_label:
-        users, pref, graphs = utils.read_sushi('b')
-        train, test = utils.train_test_split_sushi(users, graphs)
-        utils.pipeline_graph(data=pref, user=1, mode='compute_linear_edges')
-        utils.pipeline_graph(data=pref, user=1, mode='compute_all_edges')
