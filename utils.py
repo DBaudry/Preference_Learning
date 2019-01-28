@@ -60,6 +60,15 @@ def reshape_pref(pref):
 def ratio_n_obs(m_pref):
     return int(np.sqrt(2*m_pref))
 
+def gridsearchBool(best_param):
+    if isinstance(best_param, bool):
+        gridsearch=False
+    else:
+        if isinstance(best_param[0], list):
+            gridsearch=True
+        else:
+            gridsearch=False
+    return gridsearch
 
 def get_alpha(dim):
     rho = np.random.uniform()
