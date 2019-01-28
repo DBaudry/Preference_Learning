@@ -28,9 +28,9 @@ if __name__ == '__main__':
         test = generator.get_input_test(n_pref_test)
         K, sigma = 10., 0.1  # Best parameters with the grid below
         # K, sigma = [0.1, 1., 5., 10.], [0.01, 0.1, 1.]
-        model = IL.learning_instance_preference(inputs=train, K=K, sigma=sigma)
-        xp.run_instance_xp(generator, model, train, test, K, sigma,
-                           gridsearch=False, show_results=True)
+        model = IL.learning_instance_preference(inputs=train, K=K, sigma=sigma, print_callback=True)
+        xp.run_instance_xp(generator, model, train, test, K, sigma, gridsearch=False, show_results=True)
+        
     if check_authors_expe:
         datasets = ['pyrim']  # ['pyrim', 'triazines', 'machine', 'housing']
         n_expe = 1
@@ -41,5 +41,6 @@ if __name__ == '__main__':
         # param=[[0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 50, 100],
         # [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 50, 100]] and then refine according
         # to the best values returned
-        xp.run_instance_xp_authors(param='best',
-                                   n_expe=n_expe, datasets=datasets, show_results=False)
+        param = [[0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 50, 100],
+                 [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 50, 100]]
+        xp.run_instance_xp_authors(param=param, n_expe=n_expe, datasets=datasets, show_results=True, print_callback=False)
