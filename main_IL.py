@@ -2,13 +2,14 @@ import numpy as np
 import input_data as data
 import Instance_learning as IL
 import expe as xp
+from SVM_IL import *
 
 
 #np.random.seed(42311)
 
 check_random = False
-check_real_data = False
-check_authors_expe = True
+check_real_data = True
+check_authors_expe = False
 
 if __name__ == '__main__':
     if check_random:
@@ -21,16 +22,31 @@ if __name__ == '__main__':
         xp.run_instance_xp(generator, model, train, test, K, sigma, gridsearch=False)
 
     if check_real_data:
-        n_obs, n_features = 20, -1  # put to -1, -1 if you want the whole data set
-        n_pref_train, n_pref_test = 400, 200
+        n_obs, n_features = 200, -1  # put to -1, -1 if you want the whole data set
+        n_pref_train, n_pref_test = 700, 20000
         generator = data.pref_generator('housing', n_obs, n_features)
-        train = generator.get_input_train(n_pref_train)
-        test = generator.get_input_test(n_pref_test)
-        K, sigma = 10., 0.1  # Best parameters with the grid below
+        #train = generator.get_input_train(n_pref_train)
+        #test = generator.get_input_test(n_pref_test)
+        #K, sigma = 10., 0.1  # Best parameters with the grid below
         # K, sigma = [0.1, 1., 5., 10.], [0.01, 0.1, 1.]
-        model = IL.learning_instance_preference(inputs=train, K=K, sigma=sigma)
-        xp.run_instance_xp(generator, model, train, test, K, sigma,
-                           gridsearch=False, show_results=True)
+        #model = IL.learning_instance_preference(inputs=train, K=K, sigma=sigma)
+        #xp.run_instance_xp(generator, model, train, test, K, sigma,
+        #                   gridsearch=False, show_results=True)
+        SVMHerb, SVMHar = [], []
+        for _ in range(20):
+            train = generator.get_input_train(n_pref_train)
+            test = generator.get_input_test(n_pref_test)
+            K, C = [10 ** i for i in range(-2, 5)], [10 ** i for i in range(-3, 4)]
+            # K, C = 10, 0.01
+            learnerHerb = SVM_InstancePref(train, K, C)
+            learnerHar = CCSVM(train, K, C)
+            learnerHerb.fit()
+            learnerHar.fit()
+            SVMHerb.append(learnerHerb.score(test[0], test[1], train=False))
+            SVMHar.append(learnerHar.score(test[0], test[1], train=False))
+        print(np.mean(SVMHar), np.std(SVMHar))
+        print(np.mean(SVMHerb), np.std(SVMHerb))
+
     if check_authors_expe:
         datasets = ['pyrim']  # ['pyrim', 'triazines', 'machine', 'housing']
         n_expe = 1
