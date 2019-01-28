@@ -49,7 +49,7 @@ def run_instance_xp(gen, model, train, test, K, sigma, gridsearch=False, show_re
     return {'MAP': MAP, 'score_train': score_train, 'evidence': evidence,
             'proba_test': proba, 'score_test': score}
 
-def run_instance_xp_authors(n_expe, datasets, param='best', show_results=False):
+def run_instance_xp_authors(n_expe, datasets, param='best', show_results=False, print_callback=False):
     results = {}
     l = len(datasets)
     gridsearch = gridsearchBool(param)
@@ -63,7 +63,7 @@ def run_instance_xp_authors(n_expe, datasets, param='best', show_results=False):
         for expe in range(n_expe):
             generator = data.pref_generator(m, n_obs, n_features)
             train, test = generator.get_input_train(n_pref_train), generator.get_input_test(n_pref_test)
-            model = IL.learning_instance_preference(inputs=train, K=K0, sigma=sigma0)
+            model = IL.learning_instance_preference(inputs=train, K=K0, sigma=sigma0, print_callback=print_callback)
             results = run_instance_xp(generator, model, train, test, K0, sigma0, gridsearch=gridsearch, show_results=show_results)
             score_train.append(1 - results['score_train'])
             score_test.append(1 - results['score_test'])
