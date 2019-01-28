@@ -40,6 +40,42 @@ def read_data(data, n, d):
     return X
 
 
+def read_sushi(type):
+    users = pd.read_csv(os.path.join('./Data', 'sushi3.udata'), header=None, sep='\t')
+    pref = pd.read_csv(os.path.join('./Data', 'sushi3'+type+'.5000.10.order'), header=None, sep='\t')
+    graphs = []
+    for user in range(users.shape[0]):
+        graphs.append(compute_all_edges(to_preference(pref, user)))
+    return users, graphs
+
+
+def read_bestmovies():
+    X = pd.read_csv(os.path.join('./Data/', 'top7movies.txt'), sep=',')
+    users = pd.get_dummies(X.loc[:, ['user_id', 'gender', 'age', 'latitude', 'longitude', 'occupations']])
+    graphs = []
+    for user in range(users.shape[0]):
+        graphs.append(get_pref_movies(X.iloc[user, -1]))
+    return users, graphs
+
+
+def read_data_label(dataset, type):
+    if dataset == 'sushi':
+        users, graphs = read_sushi(type)
+    elif dataset == 'movies':
+        users, graphs = read_bestmovies()
+    return users, graphs
+
+
+def train_test_split_sushi(users, graphs):
+    idx = np.random.choice(range(users.shape[0]), users.shape[0], replace=False)
+    train_idx, test_idx = idx[0:int(0.75*len(idx))], idx[(int(0.75*len(idx))+1):]
+    users_train = users.iloc[train_idx, :]
+    users_test = users.iloc[test_idx, :]
+    graphs_train, graphs_test = [graphs[i] for i in train_idx], [graphs[i] for i in test_idx]
+    train, test = [np.array(users_train), graphs_train], [np.array(users_test), graphs_test]
+    return train, test
+
+
 def to_preference(data, user):
     x = data.iloc[user, 0]
     return np.array(str.split(x)[2:]).astype('int').tolist()
@@ -60,23 +96,24 @@ def compute_all_edges(a):
     return nodes
 
 
-def read_sushi(type):
-    users = pd.read_csv(os.path.join('./Data', 'sushi3.udata'), header=None, sep='\t')
-    pref = pd.read_csv(os.path.join('./Data', 'sushi3'+type+'.5000.10.order'), header=None, sep='\t')
-    graphs = []
-    for user in range(users.shape[0]):
-        graphs.append(compute_all_edges(to_preference(pref, user)))
-    return users, pref, graphs
+def letters_to_numbers(s):
+    s = s.replace('a', '0').replace('b', '1').replace('c', '2')
+    s = s.replace('d', '3').replace('e', '4').replace('f', '5')
+    s = s.replace('g', '6')
+    return s
 
 
-def train_test_split_sushi(users, graphs):
-    idx = np.random.choice(range(users.shape[0]), users.shape[0], replace=False)
-    train_idx, test_idx = idx[0:int(0.75*len(idx))], idx[(int(0.75*len(idx))+1):]
-    users_train = users.iloc[train_idx, :]
-    users_test = users.iloc[test_idx, :]
-    graphs_train, graphs_test = [graphs[i] for i in train_idx], [graphs[i] for i in test_idx]
-    train, test = [np.array(users_train), graphs_train], [np.array(users_test), graphs_test]
-    return train, test
+def get_pref_movies(s):
+    s = letters_to_numbers(s)
+    s = letters_to_numbers(s).split('>')
+    b = [list(i) for i in s]
+    b = [[int(float(j)) for j in i] for i in b]
+    n = len(b)
+    pref = []
+    for j in range(0, n):
+        for k in range(j + 1, n):
+            pref.append([i for i in itertools.product(b[j], b[k])])
+    return np.array(list(itertools.chain.from_iterable(pref)))
 
 
 def get_positions(a, mode):
