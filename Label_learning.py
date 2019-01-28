@@ -158,5 +158,18 @@ class learning_label_preference:
         denom = np.linalg.det(np.dot(cov, H))
         return np.log(np.exp(-S)/np.sqrt(np.abs(denom)))
 
+    def get_kernel(self, data, a):
+        K = self.K[a]
+        kt = np.empty((data.shape[0], self.X.shape[0]))
+        for i in range(data.shape[0]):
+            for j in range(self.X.shape[0]):
+                kt[i, j] = gaussian_kernel(data[i], self.X[j], K)
+        return kt
+
     def predict(self, data, map):
-        pass
+        beta = np.dot(block_diag(*self.all_inv_cov), map).reshape((self.n_labels, self.n))
+        E = np.empty((self.n_labels, data.shape[0]))
+        for a in range(self.n_labels):
+            Ka = self.get_kernel(data, a)
+            E[a] = np.dot(Ka, beta[a])
+        return E
