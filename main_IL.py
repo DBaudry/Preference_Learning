@@ -47,5 +47,6 @@ if __name__ == '__main__':
         xp.run_instance_xp_authors(param=param, n_expe=n_expe, datasets=datasets, show_results=True, print_callback=False)
 
     if check_label:
-        users, graphs = utils.read_data_label('movies', 'b')
-        train, test = utils.train_test_split_sushi(users, graphs)
+        users, graphs = utils.read_data_LL('algae')
+        train, test = utils.train_test_split(users, graphs)
+
