@@ -4,7 +4,7 @@ import Instance_learning as IL
 import expe as xp
 
 
-np.random.seed(42311)
+#np.random.seed(42311)
 
 check_random = False
 check_real_data = False
@@ -32,8 +32,13 @@ if __name__ == '__main__':
         xp.run_instance_xp(generator, model, train, test, K, sigma, gridsearch=False, show_results=True)
 
     if check_authors_expe:
-        datasets = ['pyrim', 'triazines', 'machine', 'housing']
+        datasets = ['abalone']  # ['pyrim', 'triazines', 'machine', 'housing']
         n_expe = 1
-        best_param = True
-        K, sigma = (None, None) if best_param else (1, 1)
-        xp.run_instance_xp_authors(best_param=True, K=K, sigma=sigma, n_expe=n_expe, datasets=datasets, gridsearch=False, show_results=False)
+        # If you want to use the best parameters computed using gridsearching you should write best_param=True.
+        # If not, rather to use your own values or list of values for gridsearching, write best_param = (., .)
+        # or best_param = [[., ., .], [., ., .]]
+        # For gridsearch method you can start with
+        # best_param=[[0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 50, 100],
+        # [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 50, 100]]
+        xp.run_instance_xp_authors(best_param=True,
+                                   n_expe=n_expe, datasets=datasets, show_results=False)
