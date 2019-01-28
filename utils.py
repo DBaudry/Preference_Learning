@@ -10,14 +10,13 @@ import warnings
 warnings.filterwarnings("ignore")
 
 
-
 targets = {'abalone': 'rings', 'diabetes': 'c_peptide', 'housing': 'class',
            'machine': 'class', 'pyrim': 'activity', 'r_wpbc': 'Time', 'triazines': 'activity'}
 
 min_max_scaler = preprocessing.MinMaxScaler()
 
-''' Short functions '''
 
+''' Short functions '''
 
 def combinations(n2, n1=0):
     a = [[(i, j) for i in range(n1, j)] for j in range(n1, n2)]
