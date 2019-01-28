@@ -6,7 +6,9 @@ import input_data as data
 import Instance_learning as IL
 
 dataset_shapes = {'abalone': (4177, 9), 'diabetes': (43, 3), 'housing': (506, 14),
-                  'machine': (209, 7), 'pyrim': (74, 28), 'r_wpbc': (194, 33), 'triazines': (186, 61)}
+                  'machine': (209, 7), 'pyrim': (74, 28), 'r_wpbc': (194, 33), 'triazines': (186, 61),
+                  'algae': (316, 12), 'german2005': (412, 30), 'german2009': (412, 33), 'movies': (602, 9),
+                  'sushia': (5000, 11), 'sushib': (5000, 11)}
 
 authors_n_pref = {'pyrim': 100, 'triazines': 300, 'machine': 500, 'housing': 700, 'abalone': 1000}
 

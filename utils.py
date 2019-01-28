@@ -5,6 +5,7 @@ import itertools
 from sklearn import preprocessing
 import networkx as nx
 import matplotlib.pyplot as plt
+from sklearn.datasets import load_svmlight_file
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -13,10 +14,13 @@ warnings.filterwarnings("ignore")
 targets = {'abalone': 'rings', 'diabetes': 'c_peptide', 'housing': 'class',
            'machine': 'class', 'pyrim': 'activity', 'r_wpbc': 'Time', 'triazines': 'activity'}
 
+n_attributes = {'waveform': 40, 'dna': 180, 'mnist': 772, 'letter': 16, 'satimage': 36, 'usps': 256, 'segment': 19}
+
 min_max_scaler = preprocessing.MinMaxScaler()
 
 
 ''' Short functions '''
+
 
 def combinations(n2, n1=0):
     a = [[(i, j) for i in range(n1, j)] for j in range(n1, n2)]
@@ -67,7 +71,8 @@ def get_alpha(dim):
     return np.random.permutation(coeff/coeff.sum())
 
 
-'''Function to read data for instance learning'''
+# Function to read data for instance learning
+
 
 def read_data_IL(data, n, d):
     """
@@ -88,52 +93,68 @@ def read_data_IL(data, n, d):
     return X
 
 
-'''Function to read data for label learning'''
+# Function to read data for label learning
+# Datasets are chosen among : 'sushia', 'sushib', 'movies', 'german2005', 'german2009', 'algae', 'dna', 'letter'
+# 'mnist', 'satimage', 'segment', 'usps', 'waveform'
 
 
-def read_data_LL(dataset):
+def read_data_LL(dataset, n, mutliclf):
     graphs = []
     if dataset == 'sushia':
-        users = pd.read_csv(os.path.join('./Data', 'sushi3.udata'), header=None, sep='\t').iloc[:, 1:]
-        pref = pd.read_csv(os.path.join('./Data', 'sushi3a.5000.10.order'), header=None, sep='\t')
+        users = pd.read_csv(os.path.join('./Data', 'sushi3.udata'), header=None, sep='\t').iloc[:n, 1:]
+        pref = pd.read_csv(os.path.join('./Data', 'sushi3a.5000.10.order'), header=None, sep='\t').iloc[:n, :]
         for user in range(users.shape[0]):
             graphs.append(compute_all_edges(to_preference(pref, user)))
 
     elif dataset == 'sushib':
-        users = pd.read_csv(os.path.join('./Data', 'sushi3.udata'), header=None, sep='\t').iloc[:, 1:]
-        pref = pd.read_csv(os.path.join('./Data', 'sushi3b.5000.10.order'), header=None, sep='\t')
+        users = pd.read_csv(os.path.join('./Data', 'sushi3.udata'), header=None, sep='\t').iloc[:n, 1:]
+        pref = pd.read_csv(os.path.join('./Data', 'sushi3b.5000.10.order'), header=None, sep='\t').iloc[:n, :]
         for user in range(users.shape[0]):
             graphs.append(compute_all_edges(to_preference(pref, user)))
 
     elif dataset == 'movies':
-        X = pd.read_csv(os.path.join('./Data/', 'top7movies.txt'), sep=',')
-        users = pd.get_dummies(X.loc[:, ['user_id', 'gender', 'age', 'latitude', 'longitude', 'occupations']])
+        X = pd.read_csv(os.path.join('./Data/', 'top7movies.txt'), sep=',').iloc[:n, :]
+        users = pd.get_dummies(X.loc[:, ['gender', 'age', 'latitude', 'longitude', 'occupations']])
         for user in range(users.shape[0]):
             graphs.append(get_pref_movies(X.iloc[user, -1]))
 
     elif dataset in ['german2005', 'german2009']:
-        X = pd.read_csv(os.path.join('./Data/', dataset+'.txt'), sep=',')
+        X = pd.read_csv(os.path.join('./Data/', dataset+'.txt'), sep=',').iloc[:n, :]
         users = pd.get_dummies(X.loc[:, [col for col in X.columns if col not in ['State', 'Region', 'ranking']]])
         for user in range(users.shape[0]):
             graphs.append(get_pref_movies(X.iloc[user, -1]))
 
     elif dataset == 'algae':
-        X = pd.read_csv(os.path.join('./Data/', 'algae.txt'), sep=',')
+        X = pd.read_csv(os.path.join('./Data/', 'algae.txt'), sep=',').iloc[:n, :]
         users = pd.get_dummies(X.iloc[:, :-2])
         for user in range(users.shape[0]):
             graphs.append(get_pref_movies(X.iloc[user, -1]))
 
-    return users, graphs
+    else:
+        d = load_svmlight_file(os.path.join('./Data/', dataset+'.scale-0'), n_features=n_attributes[dataset])
+        users = pd.DataFrame(d[0].todense()).iloc[:n, :]
+        classes = np.array(d[1])[:n]
+        labels = np.unique(classes)
+        graphs = []
+        for c in classes:
+            graphs.append([(c, l) for l in labels if c != l])
+    if mutliclf:
+        return users, graphs, classes
+    else:
+        return users, graphs, False
 
 
-def train_test_split(users, graphs):
+def train_test_split(users, graphs, classes):
     idx = np.random.choice(range(users.shape[0]), users.shape[0], replace=False)
     X = pd.DataFrame(min_max_scaler.fit_transform(users), columns=users.columns, index=users.index)
-    train_idx, test_idx = idx[0:int(0.75*len(idx))], idx[(int(0.75*len(idx))+1):]
-    users_train = X.iloc[train_idx, :]
-    users_test = X.iloc[test_idx, :]
+    train_idx, test_idx = idx[0:int(0.75*len(idx))], idx[(int(0.75*len(idx))):]
+    users_train, users_test = X.iloc[train_idx, :], X.iloc[test_idx, :]
     graphs_train, graphs_test = [graphs[i] for i in train_idx], [graphs[i] for i in test_idx]
-    train, test = [np.array(users_train), graphs_train], [np.array(users_test), graphs_test]
+    if isinstance(classes, bool):
+        train, test = [np.array(users_train), graphs_train], [np.array(users_test), graphs_test]
+    else:
+        classes_train, classes_test = classes[train_idx], classes[test_idx]
+        train, test = [np.array(users_train), classes_train, graphs_train], [np.array(users_test), classes_test, graphs_test]
     return train, test
 
 
