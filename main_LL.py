@@ -7,6 +7,10 @@ import utils
 check_random = False
 check_label = True
 
+mapping_multiclf = {'sushia': False, 'sushib': False, 'movies': False, 'german2005': False, 'german2009': False,
+                    'algae': False, 'dna': True, 'letter': True, 'mnist': True, 'satimage': True, 'segment': True,
+                    'usps': True, 'waveform': True}
+
 if __name__ == '__main__':
     if check_random:
         n, d, m, n_label = 20, 5, 6, 4
@@ -22,8 +26,11 @@ if __name__ == '__main__':
         xp.run_label_xp(generator, model, train, test, K, sigma, gridsearch=False)
 
     if check_label:
-        users, graphs = utils.read_data_LL('algae')
-        train, test = utils.train_test_split(users, graphs)
+        n = 100
+        dataset = 'waveform'
+        m = mapping_multiclf[dataset]
+        users, graphs, classes = utils.read_data_LL(dataset, n, mutliclf=m)
+        train, test = utils.train_test_split(users, graphs, classes)
         K, sigma = np.arange(train[0].shape[1])+1/train[0].shape[0], 0.1
         model = LL.learning_label_preference(inputs=train, K=K, sigma=sigma)
         xp.run_label_xp(0, model, train, test, K, sigma, gridsearch=False)
