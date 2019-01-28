@@ -31,4 +31,6 @@ if __name__ == '__main__':
         m = mapping_multiclf[dataset]
         users, graphs, classes = utils.read_data_LL(dataset, n, mutliclf=m)
         train, test = utils.train_test_split(users, graphs, classes)
-
+        K, sigma = np.arange(train[0].shape[1])+1/train[0].shape[0], 0.1
+        model = LL.learning_label_preference(inputs=train, K=K, sigma=sigma)
+        xp.run_label_xp(0, model, train, test, K, sigma, gridsearch=False)
