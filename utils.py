@@ -57,8 +57,20 @@ def reshape_pref(pref):
         new_pref.append((mapping[p[0]], mapping[p[1]]))
     return np.array(new_pref), indices
 
+
 def ratio_n_obs(m_pref):
     return int(np.sqrt(2*m_pref))
+
+
+def gridsearchBool(param):
+    if param == 'best':
+        gridsearch=False
+    else:
+        if isinstance(param[0], list):
+            gridsearch=True
+        else:
+            gridsearch=False
+    return gridsearch
 
 
 def get_alpha(dim):

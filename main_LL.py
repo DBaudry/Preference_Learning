@@ -5,7 +5,7 @@ import expe as xp
 import utils
 
 if __name__ == '__main__':
-    n, d, m, n_label = 10, 5, 12, 8
+    n, d, m, n_label = 20, 5, 6, 4
     label_func = [data.cobb_douglas for l in range(n_label)]
     rho = 0.9
     alpha = [utils.get_alpha(d) for _ in range(n_label)]
