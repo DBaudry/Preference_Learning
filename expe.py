@@ -49,14 +49,14 @@ def run_instance_xp(gen, model, train, test, K, sigma, gridsearch=False, show_re
     return {'MAP': MAP, 'score_train': score_train, 'evidence': evidence,
             'proba_test': proba, 'score_test': score}
 
-def run_instance_xp_authors(n_expe, datasets, best_param=True, show_results=False):
+def run_instance_xp_authors(n_expe, datasets, param='best', show_results=False):
     results = {}
     l = len(datasets)
-    gridsearch = gridsearchBool(best_param)
+    gridsearch = gridsearchBool(param)
     for i, m in tqdm(enumerate(datasets), desc='Running experiments on '+ str(l) +' datasets', total=l):
         b = best_parameters[m]
-        K0 = b[0] if isinstance(best_param, bool) else best_param[0]
-        sigma0 = b[1] if isinstance(best_param, bool) else best_param[1]
+        K0 = b[0] if param == 'best' else param[0]
+        sigma0 = b[1] if param == 'best' else param[1]
         n_obs, n_features = ratio_n_obs(authors_n_pref[m]), -1
         n_pref_train, n_pref_test = authors_n_pref[m], 20000
         score_train, score_test = [], []
