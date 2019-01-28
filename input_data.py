@@ -1,7 +1,6 @@
 import numpy as np
 import copy
 import utils
-import pickle as pkl
 
 class pref_generator():
     def __init__(self, dataset, n=-1, d=-1):
@@ -19,7 +18,11 @@ class pref_generator():
         return self.training_pairs
 
     def test_generator(self, m):
-        self.pairs_index = np.array([(i, j) for (i, j) in utils.combinations(self.nmax, self.n+1)]) #if (i, j) not in self.training_pairs])
+        if self.n == self.nmax:
+            n1 = 0
+        else:
+            n1 = self.n+1
+        self.pairs_index = np.array([(i, j) for (i, j) in utils.combinations(self.nmax, n1)]) #if (i, j) not in self.training_pairs])
         replace = True if m > len(self.pairs_index) else False
         idx = np.random.choice(len(self.pairs_index), m, replace=replace)
         pairs = self.pairs_index[idx]

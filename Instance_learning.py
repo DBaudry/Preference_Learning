@@ -8,10 +8,11 @@ from utils import distance, n_pdf, gaussian_kernel
 
 
 class learning_instance_preference:
-    def __init__(self, inputs, K, sigma):
+    def __init__(self, inputs, K, sigma, print_callback=True):
         self.init_param(inputs, K, sigma)
         self.Nfeval = 1
         self.S = 0
+        self.print_callback = print_callback
 
     def init_param(self, inputs, K, sigma):
         """
@@ -123,9 +124,14 @@ class learning_instance_preference:
         :return: A scipy OptimizeResult dict with results after the minimization
         (convergence, last value, jacobian,...)
         """
-        print('Starting gradient descent:')
-        return minimize(self.compute_S, y, method='Newton-CG', jac=self.compute_grad_S,
+        if self.print_callback:
+            print('Starting gradient descent:')
+            m = minimize(self.compute_S, y, method='Newton-CG', jac=self.compute_grad_S,
                         hess=self.compute_Hessian_S, tol=1e-4, callback=self.callbackF)
+        else:
+            m = minimize(self.compute_S, y, method='Newton-CG', jac=self.compute_grad_S,
+                     hess=self.compute_Hessian_S, tol=1e-4)
+        return m
 
     def evidence_approx(self, y):
         """
@@ -146,14 +152,14 @@ class learning_instance_preference:
         """
         best_K, best_sigma, best_evidence = grid_K[0], grid_sigma[0], -np.inf
         for K in tqdm(grid_K):
-            for sigma in tqdm(grid_sigma):
+            for sigma in grid_sigma:
                 self.K = K
                 self.sigma = sigma
                 self.cov = self.compute_cov(K)
                 self.inv_cov = np.linalg.inv(self.cov)
                 MAP = self.compute_MAP(y0)
                 evidence = self.evidence_approx(MAP['x'])
-                print(K, sigma, evidence)
+                print('\nK={}, sigma={} : evidence={}'.format(K, sigma, evidence))
                 if evidence > best_evidence:
                     best_evidence = evidence
                     best_K, best_sigma = K, sigma
