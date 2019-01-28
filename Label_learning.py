@@ -172,4 +172,4 @@ class learning_label_preference:
         for a in range(self.n_labels):
             Ka = self.get_kernel(data, a)
             E[a] = np.dot(Ka, beta[a])
-        return E
+        return E.T
