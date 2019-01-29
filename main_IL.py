@@ -30,6 +30,7 @@ if __name__ == '__main__':
         # K, sigma = [0.1, 1., 5., 10.], [0.01, 0.1, 1.]
         model = IL.learning_instance_preference(inputs=train, K=K, sigma=sigma, print_callback=True)
         xp.run_instance_xp(generator, model, train, test, K, sigma, gridsearch=False, show_results=True)
+        print('Hello')
         
     if check_authors_expe:
         datasets = ['pyrim']  # ['pyrim', 'triazines', 'machine', 'housing']
