@@ -175,7 +175,19 @@ class learning_label_preference:
         return E.T
 
     def label_pref_rate(self, pref, map):
-        pass
+        count_glob, count_correct = 0, 0
+        for i, p in enumerate(map):
+            n = len(p)
+            p = np.array(p).argsort()[::-1]
+            pref_map = []
+            for j in range(0, n):
+                for k in range(j + 1, n):
+                    pref_map.append((p[j], p[k]))
+            for p_true in pref[i]:
+                count_glob += 1
+                if p_true in pref_map:
+                    count_correct += 1
+        return count_correct / count_glob
 
     def label_score_rate(self, pref, map):
         """
@@ -185,3 +197,4 @@ class learning_label_preference:
         """
         class_pred = np.argsort(map, axis=1)[:, -1]
         return np.mean(pref == class_pred)
+
