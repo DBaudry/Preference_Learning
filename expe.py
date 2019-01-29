@@ -4,6 +4,9 @@ from utils import ratio_n_obs, gridsearchBool
 import pickle as pkl
 import input_data as data
 import Instance_learning as IL
+import utils
+import matplotlib.pyplot as plt
+
 
 dataset_shapes = {'abalone': (4177, 9), 'diabetes': (43, 3), 'housing': (506, 14),
                   'machine': (209, 7), 'pyrim': (74, 28), 'r_wpbc': (194, 33), 'triazines': (186, 61),
@@ -78,7 +81,7 @@ def run_instance_xp_authors(n_expe, datasets, param='best', show_results=False, 
     pkl.dump(results, open('results.pkl', 'wb'))
 
 
-def run_label_xp(gen, model, train, test, K, sigma, gridsearch=False):
+def run_label_xp(gen, model, train, test, K, sigma, gridsearch=False, showgraph=False):
         """
         :param model: instance_pref_generator instance for a given function
         :param train: train set (data+pref)
@@ -99,6 +102,8 @@ def run_label_xp(gen, model, train, test, K, sigma, gridsearch=False):
         pred_test = model.predict(test[0], MAP['x'])
         score_train_classif = model.label_score_rate(train[2], pred_train)
         score_test_classif = model.label_score_rate(test[2], pred_test)
+        score_train_pref = model.label_pref_rate(train[1], pred_train)
+        score_test_pref = model.label_pref_rate(test[1], pred_test)
         print('Convergence of the minimizer of S : {}'.format(MAP['success']))
         print('Maximum a Posteriori : {}'.format(MAP['x']))
         print('Evidence Approximation (p(D|f_MAP)) : {}'.format(evidence))
@@ -106,6 +111,14 @@ def run_label_xp(gen, model, train, test, K, sigma, gridsearch=False):
         print('Best classes predicted on train : {}'.format(np.argsort(pred_train, axis=1)[:, -1]))
         print('True best classes on test : {}'.format(test[2]))
         print('Best classes predicted on test : {}'.format(np.argsort(pred_test, axis=1)[:, -1]))
-        print('Classification error on train: {}, and test: {}'.format(1-score_train_classif, 1-score_test_classif))
+        print('Mean label error on train: {}, and test: {}'.format(1-score_train_classif, 1-score_test_classif))
+        print('Mean pref error on train: {}, and test: {}'.format(1 - score_train_pref, 1 - score_test_pref))
+        if showgraph:
+            plt.subplot(1,2,1)
+            utils.pipeline_graph(train[1][0], 0, 'compute_all_edges')
+            plt.subplot(1,2,2)
+            utils.pipeline_graph(utils.compute_all_edges(np.array(pred_train[0]).argsort()[::-1]), 0,
+                                 'compute_all_edges')
+            plt.show()
         return {'MAP': MAP, 'evidence': evidence, 'predictions train': pred_train,
                 'predictions test': pred_test}

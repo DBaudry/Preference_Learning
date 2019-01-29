@@ -98,12 +98,11 @@ def read_data_IL(data, n, d):
 # 'mnist', 'satimage', 'segment', 'usps', 'waveform'
 
 
-def read_data_LL(dataset, n, mutliclf):
+def read_data_LL(dataset, n):
     graphs = []
     if dataset == 'sushia':
         users = pd.read_csv(os.path.join('./Data', 'sushi3.udata'), header=None, sep='\t').iloc[1:(n+1), 1:]
         pref = pd.read_csv(os.path.join('./Data', 'sushi3a.5000.10.order'), header=None, sep='\t').iloc[1:(n+1), :]
-        print(pref)
         classes = np.ones(n).astype(int)
         for user in range(users.shape[0]):
             t = compute_all_edges(to_preference(pref, user))
@@ -122,34 +121,41 @@ def read_data_LL(dataset, n, mutliclf):
     elif dataset == 'movies':
         X = pd.read_csv(os.path.join('./Data/', 'top7movies.txt'), sep=',').iloc[:n, :]
         users = pd.get_dummies(X.loc[:, ['gender', 'age', 'latitude', 'longitude', 'occupations']])
+        classes = np.ones(n).astype(int)
         for user in range(users.shape[0]):
-            graphs.append(get_pref_movies(X.iloc[user, -1]))
+            g = get_pref(X.iloc[user, -1])
+            graphs.append(g)
+            classes[user] = g[0, 0]
 
     elif dataset in ['german2005', 'german2009']:
         X = pd.read_csv(os.path.join('./Data/', dataset+'.txt'), sep=',').iloc[:n, :]
         users = pd.get_dummies(X.loc[:, [col for col in X.columns if col not in ['State', 'Region', 'ranking']]])
+        classes = np.ones(n).astype(int)
         for user in range(users.shape[0]):
-            graphs.append(get_pref_movies(X.iloc[user, -1]))
+            g = get_pref(X.iloc[user, -1])
+            graphs.append(g)
+            classes[user] = g[0, 0]
 
     elif dataset == 'algae':
         X = pd.read_csv(os.path.join('./Data/', 'algae.txt'), sep=',').iloc[:n, :]
         users = pd.get_dummies(X.iloc[:, :-2])
+        classes = np.ones(n).astype(int)
         for user in range(users.shape[0]):
-            graphs.append(get_pref_movies(X.iloc[user, -1]))
+            g = get_pref(X.iloc[user, -1])
+            graphs.append(g)
+            classes[user] = g[0, 0]
 
     else:
         d = load_svmlight_file(os.path.join('./Data/', dataset+'.scale-0'), n_features=n_attributes[dataset])
         users = pd.DataFrame(d[0].todense()).iloc[:n, :]
-        classes = np.array(d[1]).astype(int)[:n]-1
+        classes = np.array(d[1]).astype(int)-1
         labels = np.unique(classes)
         graphs = []
-        for c in classes:
+        for c in classes[:n]:
             graphs.append([(c, l) for l in labels if c != l])
 
-    if mutliclf:
-        return users, graphs, classes
-    else:
-        return users, graphs, False
+    return users, graphs, classes
+
 
 
 def train_test_split(users, graphs, classes):
@@ -158,11 +164,8 @@ def train_test_split(users, graphs, classes):
     train_idx, test_idx = idx[0:int(0.75*len(idx))], idx[(int(0.75*len(idx))):]
     users_train, users_test = X.iloc[train_idx, :], X.iloc[test_idx, :]
     graphs_train, graphs_test = [graphs[i] for i in train_idx], [graphs[i] for i in test_idx]
-    if isinstance(classes, bool):
-        train, test = [np.array(users_train), graphs_train], [np.array(users_test), graphs_test]
-    else:
-        classes_train, classes_test = classes[train_idx], classes[test_idx]
-        train, test = [np.array(users_train), graphs_train, classes_train], [np.array(users_test), graphs_test, classes_test]
+    classes_train, classes_test = classes[train_idx], classes[test_idx]
+    train, test = [np.array(users_train), graphs_train, classes_train], [np.array(users_test), graphs_test, classes_test]
     return train, test
 
 
@@ -196,7 +199,7 @@ def letters_to_numbers(s):
     return s
 
 
-def get_pref_movies(s):
+def get_pref(s):
     s = letters_to_numbers(s)
     s = letters_to_numbers(s).split('>')
     b = [list(i) for i in s]
@@ -219,19 +222,12 @@ def get_positions(a, mode):
         return positions
 
 
-def draw_graph(G, user, mode, a):
-    w = 10 if mode == 'compute_all_edges' else 3
-    plt.figure('User '+str(user), figsize=(15, w))
-    nx.draw(G, pos=get_positions(a, mode), with_labels=True, font_weight='bold', node_size=1e3)
-    plt.title('Preferences of user ' + str(user), fontsize=20)
-    plt.show()
-
-
 def pipeline_graph(data, user, mode):
     G = nx.DiGraph()
-    a = to_preference(data, user)
+    a = np.unique(data)
     G.add_nodes_from(a)
-    eval('G.add_edges_from(' + mode + '(a))')
-    draw_graph(G, user, mode, a)
+    G.add_edges_from(data)
+    nx.draw(G, pos=get_positions(a, mode), with_labels=True, font_weight='bold', node_size=1e3)
+    plt.title('Preferences of user ' + str(user), fontsize=20)
 
 

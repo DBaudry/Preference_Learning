@@ -7,10 +7,6 @@ import utils
 check_random = False
 check_label = True
 
-mapping_multiclf = {'sushia': True, 'sushib': True, 'movies': False, 'german2005': False, 'german2009': False,
-                    'algae': False, 'dna': True, 'letter': True, 'mnist': True, 'satimage': True, 'segment': True,
-                    'usps': True, 'waveform': True}
-
 mapping_n_labels = {'sushia': 10, 'sushib': 100, 'movies': 7, 'german2005': 5, 'german2009': 5,
                     'algae': 7, 'dna': 3, 'letter': 26, 'mnist': 10, 'satimage': 6, 'segment': 7,
                     'usps': 10, 'waveform': 3}
@@ -31,10 +27,10 @@ if __name__ == '__main__':
 
     if check_label:
         n = 60
-        dataset = 'dna'
-        m = mapping_multiclf[dataset]
-        users, graphs, classes = utils.read_data_LL(dataset, n, mutliclf=m)
+        dataset = 'sushia'
+        users, graphs, classes = utils.read_data_LL(dataset, n)
         train, test = utils.train_test_split(users, graphs, classes)
         K, sigma = np.ones(mapping_n_labels[dataset])*1, 0.1
         model = LL.learning_label_preference(inputs=train, K=K, sigma=sigma)
         xp.run_label_xp(0, model, train, test, K, sigma, gridsearch=False)
+
