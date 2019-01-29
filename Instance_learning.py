@@ -13,6 +13,7 @@ class learning_instance_preference:
         self.Nfeval = 1
         self.S = 0
         self.print_callback = print_callback
+        self.tol = 1e-4
 
     def init_param(self, inputs, K, sigma):
         """
@@ -127,10 +128,10 @@ class learning_instance_preference:
         if self.print_callback:
             print('Starting gradient descent:')
             m = minimize(self.compute_S, y, method='Newton-CG', jac=self.compute_grad_S,
-                        hess=self.compute_Hessian_S, tol=1e-4, callback=self.callbackF)
+                        hess=self.compute_Hessian_S, tol=self.tol, callback=self.callbackF)
         else:
             m = minimize(self.compute_S, y, method='Newton-CG', jac=self.compute_grad_S,
-                     hess=self.compute_Hessian_S, tol=1e-4)
+                     hess=self.compute_Hessian_S, tol=self.tol)
         return m
 
     def evidence_approx(self, y):
