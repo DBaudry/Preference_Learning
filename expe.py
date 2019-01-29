@@ -51,6 +51,7 @@ def run_instance_xp(gen, model, train, test, K, sigma, gridsearch=False, show_re
     return {'MAP': MAP, 'score_train': score_train, 'evidence': evidence,
             'proba_test': proba, 'score_test': score}
 
+
 def run_instance_xp_authors(n_expe, datasets, param='best', show_results=False, print_callback=False):
     results = {}
     l = len(datasets)
@@ -96,10 +97,15 @@ def run_label_xp(gen, model, train, test, K, sigma, gridsearch=False):
         evidence = model.evidence_approx(MAP['x'])
         pred_train = model.predict(train[0], MAP['x'])
         pred_test = model.predict(test[0], MAP['x'])
-        print(train[1])
-        print(np.argsort(pred_train, axis=1))
+        score_train_classif = model.label_score_rate(train[2], pred_train)
+        score_test_classif = model.label_score_rate(test[2], pred_test)
         print('Convergence of the minimizer of S : {}'.format(MAP['success']))
         print('Maximum a Posteriori : {}'.format(MAP['x']))
         print('Evidence Approximation (p(D|f_MAP)) : {}'.format(evidence))
+        print('True best classes on train : {}'.format(train[2]))
+        print('Best classes predicted on train : {}'.format(np.argsort(pred_train, axis=1)[:, -1]))
+        print('True best classes on test : {}'.format(test[2]))
+        print('Best classes predicted on test : {}'.format(np.argsort(pred_test, axis=1)[:, -1]))
+        print('Classification error on train: {}, and test: {}'.format(1-score_train_classif, 1-score_test_classif))
         return {'MAP': MAP, 'evidence': evidence, 'predictions train': pred_train,
                 'predictions test': pred_test}

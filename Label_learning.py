@@ -146,7 +146,7 @@ class learning_label_preference:
         """
         print('Starting gradient descent:\n')
         return minimize(self.compute_S, y, method='Newton-CG', jac=self.compute_grad_S,
-                        hess=self.compute_Hessian_S, tol=1e-3, callback=self.callbackF)
+                        hess=self.compute_Hessian_S, tol=1e-4, callback=self.callbackF)
 
     def evidence_approx(self, y):
         """
@@ -173,3 +173,15 @@ class learning_label_preference:
             Ka = self.get_kernel(data, a)
             E[a] = np.dot(Ka, beta[a])
         return E.T
+
+    def label_pref_rate(self, pref, map):
+        pass
+
+    def label_score_rate(self, pref, map):
+        """
+        :param pref: Boolean matrix with input preferences
+        :param map: Boolean matrix with output preferences
+        :return: confusion matrix (the result is symmetric)
+        """
+        class_pred = np.argsort(map, axis=1)[:, -1]
+        return np.mean(pref == class_pred)
