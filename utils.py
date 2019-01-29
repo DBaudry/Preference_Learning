@@ -6,17 +6,31 @@ from sklearn import preprocessing
 import networkx as nx
 import matplotlib.pyplot as plt
 from sklearn.datasets import load_svmlight_file
-
 import warnings
 warnings.filterwarnings("ignore")
 
 
-targets = {'abalone': 'rings', 'diabetes': 'c_peptide', 'housing': 'class',
-           'machine': 'class', 'pyrim': 'activity', 'r_wpbc': 'Time', 'triazines': 'activity'}
+targets = {'abalone': 'rings', 'housing': 'class', 'machine': 'class', 'pyrim': 'activity',
+           'r_wpbc': 'Time', 'triazines': 'activity'}
+
+dataset_shapes = {'abalone': (4177, 9), 'housing': (506, 14), 'machine': (209, 7), 'pyrim': (74, 28),
+                  'r_wpbc': (194, 33), 'triazines': (186, 61), 'algae': (316, 12), 'german2005': (412, 30),
+                  'german2009': (412, 33), 'movies': (602, 9), 'sushia': (5000, 11), 'sushib': (5000, 11), }
+
+mapping_n_labels = {'sushia': 10, 'sushib': 100, 'movies': 7, 'german2005': 5, 'german2009': 5,
+                    'algae': 7, 'dna': 3, 'letter': 26, 'mnist': 10, 'satimage': 6, 'segment': 7,
+                    'usps': 10, 'waveform': 3}
+
+authors_n_pref = {'pyrim': 100, 'triazines': 300, 'machine': 500, 'housing': 700, 'abalone': 1000}
+
+
+best_parameters = {'pyrim': (0.005, 0.007), 'triazines': (0.007, 0.006), 'machine': (0.03, 0.0006), 'diabetes': (1,2),
+                   'housing': (0.005, 0.001), 'abalone': (0.01, 0.005), 'sushia': 10, 'sushib': 100,
+                   'movies': 7, 'german2005': 5, 'german2009': 5, 'algae': 7, 'dna': 3, 'letter': 26,
+                   'mnist': 10, 'satimage': 6, 'segment': 7, 'usps': 10, 'waveform': 3}
+
 
 n_attributes = {'waveform': 40, 'dna': 180, 'mnist': 772, 'letter': 16, 'satimage': 36, 'usps': 256, 'segment': 19}
-
-min_max_scaler = preprocessing.MinMaxScaler()
 
 
 ''' Short functions '''
@@ -73,6 +87,7 @@ def get_alpha(dim):
 
 # Function to read data for instance learning
 
+min_max_scaler = preprocessing.MinMaxScaler()
 
 def read_data_IL(data, n, d):
     """
@@ -99,6 +114,7 @@ def read_data_IL(data, n, d):
 
 
 def read_data_LL(dataset, n):
+    n = dataset_shapes[dataset][0] if n == -1 else n
     graphs = []
     if dataset == 'sushia':
         users = pd.read_csv(os.path.join('./Data', 'sushi3.udata'), header=None, sep='\t').iloc[1:(n+1), 1:]
@@ -125,7 +141,7 @@ def read_data_LL(dataset, n):
         for user in range(users.shape[0]):
             g = get_pref(X.iloc[user, -1])
             graphs.append(g)
-            classes[user] = g[0, 0]
+            classes[user] = g[0][0]
 
     elif dataset in ['german2005', 'german2009']:
         X = pd.read_csv(os.path.join('./Data/', dataset+'.txt'), sep=',').iloc[:n, :]
@@ -134,7 +150,7 @@ def read_data_LL(dataset, n):
         for user in range(users.shape[0]):
             g = get_pref(X.iloc[user, -1])
             graphs.append(g)
-            classes[user] = g[0, 0]
+            classes[user] = g[0][0]
 
     elif dataset == 'algae':
         X = pd.read_csv(os.path.join('./Data/', 'algae.txt'), sep=',').iloc[:n, :]
@@ -143,19 +159,19 @@ def read_data_LL(dataset, n):
         for user in range(users.shape[0]):
             g = get_pref(X.iloc[user, -1])
             graphs.append(g)
-            classes[user] = g[0, 0]
+            classes[user] = g[0][0]
 
     else:
         d = load_svmlight_file(os.path.join('./Data/', dataset+'.scale-0'), n_features=n_attributes[dataset])
         users = pd.DataFrame(d[0].todense()).iloc[:n, :]
         classes = np.array(d[1]).astype(int)-1
+        if dataset == 'waveform':
+            classes += 1
         labels = np.unique(classes)
         graphs = []
         for c in classes[:n]:
             graphs.append([(c, l) for l in labels if c != l])
-
     return users, graphs, classes
-
 
 
 def train_test_split(users, graphs, classes):
@@ -209,7 +225,7 @@ def get_pref(s):
     for j in range(0, n):
         for k in range(j + 1, n):
             pref.append([i for i in itertools.product(b[j], b[k])])
-    return np.array(list(itertools.chain.from_iterable(pref)))
+    return list(itertools.chain.from_iterable(pref))
 
 
 def get_positions(a, mode):
@@ -222,12 +238,12 @@ def get_positions(a, mode):
         return positions
 
 
-def pipeline_graph(data, user, mode):
+def pipeline_graph(data, mode, title):
     G = nx.DiGraph()
     a = np.unique(data)
     G.add_nodes_from(a)
     G.add_edges_from(data)
     nx.draw(G, pos=get_positions(a, mode), with_labels=True, font_weight='bold', node_size=1e3)
-    plt.title('Preferences of user ' + str(user), fontsize=20)
+    plt.title(title, fontsize=10)
 
 

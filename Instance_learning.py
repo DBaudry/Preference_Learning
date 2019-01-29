@@ -128,10 +128,10 @@ class learning_instance_preference:
         if self.print_callback:
             print('Starting gradient descent:')
             m = minimize(self.compute_S, y, method='Newton-CG', jac=self.compute_grad_S,
-                        hess=self.compute_Hessian_S, tol=self.tol, callback=self.callbackF)
+                         hess=self.compute_Hessian_S, tol=1e-4, callback=self.callbackF)
         else:
             m = minimize(self.compute_S, y, method='Newton-CG', jac=self.compute_grad_S,
-                     hess=self.compute_Hessian_S, tol=self.tol)
+                         hess=self.compute_Hessian_S, tol=1e-4)
         return m
 
     def evidence_approx(self, y):
@@ -141,7 +141,7 @@ class learning_instance_preference:
         """
         S, H = self.compute_S(y), self.compute_Hessian_S(y)
         denom = np.linalg.det(np.dot(self.cov, H))
-        return np.log(np.exp(-S)/np.sqrt(np.abs(denom)))
+        return -S - 0.5*np.log(np.abs(denom))
 
     def compute_MAP_with_gridsearch(self, y0, grid_K, grid_sigma):
         """

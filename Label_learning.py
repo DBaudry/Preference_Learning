@@ -6,13 +6,12 @@ from scipy.optimize import minimize
 from utils import distance, n_pdf, gaussian_kernel
 from scipy.linalg import block_diag
 
-Nfeval = 1
-S = 0
-
-
 class learning_label_preference:
-    def __init__(self, inputs, K, sigma):
+    def __init__(self, inputs, K, sigma, print_callback=True):
         self.init_param(inputs, K, sigma)
+        self.Nfeval = 1
+        self.S = 0
+        self.print_callback = print_callback
 
     def init_param(self, inputs, all_K, sigma):
         """
@@ -24,11 +23,14 @@ class learning_label_preference:
         self.X = inputs[0]
         self.D = inputs[1]
         self.n, self.d = self.X.shape
-        self.n_labels = len(all_K)
-        self.all_cov = [self.compute_cov(K) for K in all_K]
-        self.all_inv_cov = [np.linalg.inv(cov) for cov in self.all_cov]
-        self.sigma = sigma
-        self.K = all_K
+        if not isinstance(all_K, list):
+            self.n_labels = len(all_K)
+            self.all_cov = [self.compute_cov(K) for K in all_K]
+            self.all_inv_cov = [np.linalg.inv(cov) for cov in self.all_cov]
+            self.sigma = sigma
+            self.K = all_K
+        else:
+            self.n_labels = len(all_K[0])
         self.corresp = self.get_corresp()
         self.current_y = None
         self.z = None
@@ -127,16 +129,14 @@ class learning_label_preference:
         return Hess_phi_all + Hess_cov
 
     def callbackF(self, Xi):
-        global Nfeval
-        global S
-        if Nfeval == 1:
-            S = self.compute_S(Xi)
-            print('Iteration {0:2.0f} : S(y)={1:3.6f}'.format(Nfeval, S))
+        if self.Nfeval == 1:
+            self.S = self.compute_S(Xi)
+            print('Iteration {0:2.0f} : S(y)={1:3.6f}'.format(self.Nfeval, self.S))
         else:
             s_next = self.compute_S(Xi)
-            print('Iteration {0:2.0f} : S(y)={1:3.6f}, tol={2:0.6f}'.format(Nfeval, s_next, abs(S-s_next)))
-            S = s_next
-        Nfeval += 1
+            print('Iteration {0:2.0f} : S(y)={1:3.6f}, tol={2:0.6f}'.format(self.Nfeval, s_next, abs(self.S-s_next)))
+            self.S = s_next
+        self.Nfeval += 1
 
     def compute_MAP(self, y):
         """
@@ -144,9 +144,42 @@ class learning_label_preference:
         :return: A scipy OptimizeResult dict with results after the minimization
         (convergence, last value, jacobian,...)
         """
-        print('Starting gradient descent:\n')
-        return minimize(self.compute_S, y, method='Newton-CG', jac=self.compute_grad_S,
-                        hess=self.compute_Hessian_S, tol=1e-4, callback=self.callbackF)
+        if self.print_callback:
+            print('Starting gradient descent:')
+            m = minimize(self.compute_S, y, method='Newton-CG', jac=self.compute_grad_S,
+                         hess=self.compute_Hessian_S, tol=1e-4, callback=self.callbackF)
+        else:
+            m = minimize(self.compute_S, y, method='Newton-CG', jac=self.compute_grad_S,
+                         hess=self.compute_Hessian_S, tol=1e-4)
+        return m
+
+    def compute_MAP_with_gridsearch(self, y0, grid_K, grid_sigma):
+        """
+        :param y0: Starting point for optimization
+        :param grid_K: grid for the kernel parameter K
+        :param grid_sigma: grid for the noise variance parameter sigma
+        :return: Maximum a posteriori for the given value of x for the parameters
+        with the largest evidence
+        """
+        best_K, best_sigma, best_evidence = grid_K[0], grid_sigma[0], -np.inf
+        for K in grid_K:
+            for sigma in grid_sigma:
+                self.K = K
+                self.sigma = sigma
+                self.all_cov = [self.compute_cov(K) for K in self.K]
+                self.all_inv_cov = [np.linalg.inv(cov) for cov in self.all_cov]
+                MAP = self.compute_MAP(y0)
+                evidence = self.evidence_approx(MAP['x'])
+                print('\nK={}, sigma={} : evidence={}'.format(self.K, self.sigma, evidence))
+                if evidence > best_evidence:
+                    best_evidence = evidence
+                    best_K, best_sigma = self.K, self.sigma
+                    best_MAP = MAP
+        print('Best K and Sigma in grid : {},{}'.format(best_K, best_sigma))
+        self.K, self.sigma = best_K, best_sigma
+        self.all_cov = [self.compute_cov(K) for K in self.K]
+        self.all_inv_cov = [np.linalg.inv(cov) for cov in self.all_cov]
+        return best_MAP
 
     def evidence_approx(self, y):
         """
@@ -156,7 +189,8 @@ class learning_label_preference:
         S, H = self.compute_S(y), self.compute_Hessian_S(y)
         cov = block_diag(*self.all_cov)
         denom = np.linalg.det(np.dot(cov, H))
-        return np.log(np.exp(-S)/np.sqrt(np.abs(denom)))
+        print(denom, -S, -0.5*np.log(np.abs(denom)), -(S+0.5*np.log(np.abs(denom))))
+        return -(S+0.5*np.log(np.abs(denom)))
 
     def get_kernel(self, data, a):
         K = self.K[a]
