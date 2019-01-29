@@ -101,16 +101,23 @@ def read_data_IL(data, n, d):
 def read_data_LL(dataset, n, mutliclf):
     graphs = []
     if dataset == 'sushia':
-        users = pd.read_csv(os.path.join('./Data', 'sushi3.udata'), header=None, sep='\t').iloc[:n, 1:]
-        pref = pd.read_csv(os.path.join('./Data', 'sushi3a.5000.10.order'), header=None, sep='\t').iloc[:n, :]
+        users = pd.read_csv(os.path.join('./Data', 'sushi3.udata'), header=None, sep='\t').iloc[1:(n+1), 1:]
+        pref = pd.read_csv(os.path.join('./Data', 'sushi3a.5000.10.order'), header=None, sep='\t').iloc[1:(n+1), :]
+        print(pref)
+        classes = np.ones(n).astype(int)
         for user in range(users.shape[0]):
-            graphs.append(compute_all_edges(to_preference(pref, user)))
+            t = compute_all_edges(to_preference(pref, user))
+            graphs.append(t)
+            classes[user] = t[0][0]
 
     elif dataset == 'sushib':
-        users = pd.read_csv(os.path.join('./Data', 'sushi3.udata'), header=None, sep='\t').iloc[:n, 1:]
-        pref = pd.read_csv(os.path.join('./Data', 'sushi3b.5000.10.order'), header=None, sep='\t').iloc[:n, :]
+        users = pd.read_csv(os.path.join('./Data', 'sushi3.udata'), header=None, sep='\t').iloc[1:(n+1), 1:]
+        pref = pd.read_csv(os.path.join('./Data', 'sushi3b.5000.10.order'), header=None, sep='\t').iloc[1:(n+1), :]
+        classes = np.ones(n).astype(int)
         for user in range(users.shape[0]):
-            graphs.append(compute_all_edges(to_preference(pref, user)))
+            t = compute_all_edges(to_preference(pref, user))
+            graphs.append(t)
+            classes[user] = t[0][0]
 
     elif dataset == 'movies':
         X = pd.read_csv(os.path.join('./Data/', 'top7movies.txt'), sep=',').iloc[:n, :]
@@ -133,11 +140,12 @@ def read_data_LL(dataset, n, mutliclf):
     else:
         d = load_svmlight_file(os.path.join('./Data/', dataset+'.scale-0'), n_features=n_attributes[dataset])
         users = pd.DataFrame(d[0].todense()).iloc[:n, :]
-        classes = np.array(d[1])[:n]
+        classes = np.array(d[1]).astype(int)[:n]-1
         labels = np.unique(classes)
         graphs = []
         for c in classes:
             graphs.append([(c, l) for l in labels if c != l])
+
     if mutliclf:
         return users, graphs, classes
     else:
@@ -154,7 +162,7 @@ def train_test_split(users, graphs, classes):
         train, test = [np.array(users_train), graphs_train], [np.array(users_test), graphs_test]
     else:
         classes_train, classes_test = classes[train_idx], classes[test_idx]
-        train, test = [np.array(users_train), classes_train, graphs_train], [np.array(users_test), classes_test, graphs_test]
+        train, test = [np.array(users_train), graphs_train, classes_train], [np.array(users_test), graphs_test, classes_test]
     return train, test
 
 
