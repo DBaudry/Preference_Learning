@@ -8,6 +8,7 @@ check_random = False
 check_label = False
 check_authors_expe = True
 
+np.random.seed(42312)
 
 if __name__ == '__main__':
     if check_random:
@@ -25,17 +26,19 @@ if __name__ == '__main__':
 
     if check_label:
         n = 100
-        dataset = 'waveform'
+        dataset = 'segment'
         users, graphs, classes = utils.read_data_LL(dataset, n)
         train, test = utils.train_test_split(users, graphs, classes)
-        K0, sigma0 = 1, 1
+        K0, sigma0 = 0.01, 1
         K, sigma = np.ones(utils.mapping_n_labels[dataset])*K0, sigma0
         model = LL.learning_label_preference(inputs=train, K=K, sigma=sigma, print_callback=True)
         xp.run_label_xp(model, train, test, K, sigma, show_results=False, gridsearch=False, showgraph=True, user=(5, 6))
 
     if check_authors_expe:
-        datasets = ['dna']
+        datasets = ['dna', 'waveform']
         n_expe = 1
-        xp.run_label_xp_authors(n_expe, datasets, param=[[0.01, 0.1, 1], [0.01, 0.1, 1]], show_results=False,
-                                showgraph=False, print_callback=False)
+        n_obs = 100
+        param = []
+        xp.run_label_xp_authors(n_expe, n_obs, datasets, param=param, show_results=False, showgraph=False,
+                                print_callback=False)
 

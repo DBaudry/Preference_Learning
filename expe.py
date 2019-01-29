@@ -105,8 +105,7 @@ def run_instance_xp_authors_SVM(datasets, n_expe=20, K=10, C=1):
     pkl.dump(results, open('resultsSVM.pkl', 'wb'))
 
 
-def run_label_xp(model, train, test, K, sigma, n_labels, show_results=True, gridsearch=False, print_callback=False,
-                 showgraph=False, user=(0,1)):
+def run_label_xp(model, train, test, K, sigma, show_results=True, gridsearch=False, showgraph=False, user=(0,1)):
         """
         :param model: instance_pref_generator instance for a given function
         :param train: train set (data+pref)
@@ -156,7 +155,7 @@ def run_label_xp(model, train, test, K, sigma, n_labels, show_results=True, grid
                 'Pref error train': 1-pref_score_train, 'Pref error test': 1-pref_score_test}
 
 
-def run_label_xp_authors(n_expe, datasets, param='best', show_results=False, showgraph=False, print_callback=False):
+def run_label_xp_authors(n_expe, n_obs, datasets, param='best', show_results=False, showgraph=False, print_callback=False):
     results = {}
     gridsearch = utils.gridsearchBool(param)
     for i, m in enumerate(datasets):
@@ -167,14 +166,13 @@ def run_label_xp_authors(n_expe, datasets, param='best', show_results=False, sho
             K, sigma = np.ones(utils.mapping_n_labels[m]) * param[0], param[1]
         else:
             K, sigma = [np.ones(utils.mapping_n_labels[m]) * param[0][i] for i in range(len(param[0]))], param[1]
-        n_obs = 5000
         label_error_train, label_error_test, pref_error_train, pref_error_test = [], [], [], []
         for expe in range(n_expe):
             users, graphs, classes = utils.read_data_LL(m, n_obs)
             train, test = utils.train_test_split(users, graphs, classes)
             model = LL.learning_label_preference(inputs=train, K=K, sigma=sigma, print_callback=print_callback)
-            r = run_label_xp(model, train, test, K, sigma, n_labels=utils.mapping_n_labels[m], show_results=show_results,
-                             gridsearch=gridsearch, showgraph=showgraph, user=(5, 6))
+            r = run_label_xp(model, train, test, K, sigma, show_results=show_results, gridsearch=gridsearch,
+                             showgraph=showgraph, user=(5, 6))
             label_error_train.append(r['Label error train'])
             pref_error_train.append(r['Pref error train'])
             label_error_test.append(r['Label error test'])
