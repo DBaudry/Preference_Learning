@@ -6,6 +6,7 @@ import input_data as data
 import Instance_learning as IL
 import utils
 import matplotlib.pyplot as plt
+from SVM_IL import *
 
 
 dataset_shapes = {'abalone': (4177, 9), 'diabetes': (43, 3), 'housing': (506, 14),
@@ -79,6 +80,40 @@ def run_instance_xp_authors(n_expe, datasets, param='best', show_results=False, 
               format(m_train, std_train, m_test, std_test))
         results[m] = m_train, std_train, m_test, std_test
     pkl.dump(results, open('results.pkl', 'wb'))
+
+
+def run_instance_xp_authors_SVM(datasets, n_expe=20, K=10, C=1):
+    results = {}
+    l = len(datasets)
+    for i, m in tqdm(enumerate(datasets), desc='Running experiments on '+ str(l) +' datasets', total=l):
+        n_obs, n_features = ratio_n_obs(authors_n_pref[m]), -1
+        n_pref_train, n_pref_test = authors_n_pref[m], 20000
+        score_trainHerb, score_testHerb = [], []
+        score_trainHar, score_testHar = [], []
+        for expe in range(n_expe):
+            generator = data.pref_generator(m, n_obs, n_features)
+            train, test = generator.get_input_train(n_pref_train), generator.get_input_test(n_pref_test)
+            learnerHerb = SVM_InstancePref(train, K, C)
+            learnerHar = CCSVM(train, K, C)
+            learnerHerb.fit()
+            learnerHar.fit()
+            score_testHerb.append(1 -learnerHerb.score(test[0], test[1], train=False))
+            score_testHar.append(1 - learnerHar.score(test[0], test[1], train=False))
+            score_trainHerb.append(1 -learnerHerb.score())
+            score_trainHar.append(1 - learnerHar.score())
+        m_trainHerb, std_trainHerb, m_testHerb, std_testHerb = np.mean(score_trainHerb), np.std(score_trainHerb), \
+                                                               np.mean(score_testHerb), np.std(score_testHerb)
+        m_trainHar, std_trainHar, m_testHar, std_testHar = np.mean(score_trainHar), np.std(score_trainHar),\
+                                                           np.mean(score_testHar), np.std(score_testHar)
+        print('Data set ' + m +
+              ' (Herbrich): Mean error on train {:0.4f} ± {:0.3f}, mean error on test {:0.4f} ± {:0.3f}'.
+              format(m_trainHerb, std_trainHerb, m_testHerb, std_testHerb))
+        print('Data set ' + m +
+              ' (Har-Peled): Mean error on train {:0.4f} ± {:0.3f}, mean error on test {:0.4f} ± {:0.3f}'.
+              format(m_trainHar, std_trainHar, m_testHar, std_testHar))
+        results[m] = {'Herbrich': [m_trainHerb, std_trainHerb, m_testHerb, std_testHerb],
+                      'Herbrich': [m_trainHar, std_trainHar, m_testHar, std_testHar]}
+    pkl.dump(results, open('resultsSVM.pkl', 'wb'))
 
 
 def run_label_xp(gen, model, train, test, K, sigma, gridsearch=False, showgraph=False):

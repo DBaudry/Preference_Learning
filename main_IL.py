@@ -4,7 +4,7 @@ import Instance_learning as IL
 import expe as xp
 import utils
 
-#np.random.seed(42311)
+# np.random.seed(42311)
 
 check_random = False
 check_real_data = False
@@ -12,7 +12,7 @@ check_authors_expe = False
 
 if __name__ == '__main__':
     if check_random:
-        alpha = np.array([1/10.]*10)
+        alpha = np.array([1 / 10.] * 10)
         n, d, m, mp = 20, 10, 100, 200
         generator = data.instance_pref_generator(func=data.cobb_douglas, func_param=alpha)
         train, test = generator.sample_datasets(n, d, m, mp)
@@ -30,8 +30,7 @@ if __name__ == '__main__':
         # K, sigma = [0.1, 1., 5., 10.], [0.01, 0.1, 1.]
         model = IL.learning_instance_preference(inputs=train, K=K, sigma=sigma, print_callback=True)
         xp.run_instance_xp(generator, model, train, test, K, sigma, gridsearch=False, show_results=True)
-        print('Hello')
-        
+
     if check_authors_expe:
         datasets = ['pyrim']  # ['pyrim', 'triazines', 'machine', 'housing']
         n_expe = 1
@@ -44,4 +43,5 @@ if __name__ == '__main__':
         # to the best values returned
         param = [[0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 50, 100],
                  [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 50, 100]]
-        xp.run_instance_xp_authors(param=param, n_expe=n_expe, datasets=datasets, show_results=True, print_callback=False)
+        xp.run_instance_xp_authors(param=param, n_expe=n_expe, datasets=datasets, show_results=True,
+                                   print_callback=False)
