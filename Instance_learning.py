@@ -13,6 +13,7 @@ class learning_instance_preference:
         self.Nfeval = 1
         self.S = 0
         self.print_callback = print_callback
+        self.tol = 1e-4
 
     def init_param(self, inputs, K, sigma):
         """
