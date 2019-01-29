@@ -4,9 +4,14 @@ from utils import ratio_n_obs, gridsearchBool
 import pickle as pkl
 import input_data as data
 import Instance_learning as IL
+import utils
+import matplotlib.pyplot as plt
+
 
 dataset_shapes = {'abalone': (4177, 9), 'diabetes': (43, 3), 'housing': (506, 14),
-                  'machine': (209, 7), 'pyrim': (74, 28), 'r_wpbc': (194, 33), 'triazines': (186, 61)}
+                  'machine': (209, 7), 'pyrim': (74, 28), 'r_wpbc': (194, 33), 'triazines': (186, 61),
+                  'algae': (316, 12), 'german2005': (412, 30), 'german2009': (412, 33), 'movies': (602, 9),
+                  'sushia': (5000, 11), 'sushib': (5000, 11)}
 
 authors_n_pref = {'pyrim': 100, 'triazines': 300, 'machine': 500, 'housing': 700, 'abalone': 1000}
 
@@ -49,6 +54,7 @@ def run_instance_xp(gen, model, train, test, K, sigma, gridsearch=False, show_re
     return {'MAP': MAP, 'score_train': score_train, 'evidence': evidence,
             'proba_test': proba, 'score_test': score}
 
+
 def run_instance_xp_authors(n_expe, datasets, param='best', show_results=False, print_callback=False):
     results = {}
     l = len(datasets)
@@ -75,7 +81,7 @@ def run_instance_xp_authors(n_expe, datasets, param='best', show_results=False, 
     pkl.dump(results, open('results.pkl', 'wb'))
 
 
-def run_label_xp(gen, model, train, test, K, sigma, gridsearch=False):
+def run_label_xp(gen, model, train, test, K, sigma, gridsearch=False, showgraph=False):
         """
         :param model: instance_pref_generator instance for a given function
         :param train: train set (data+pref)
@@ -86,25 +92,33 @@ def run_label_xp(gen, model, train, test, K, sigma, gridsearch=False):
         based on the model evidence
         :return: Dict: MAP obtained with the train set, prediction with test set
         """
-        # train_pref = gen.get_true_pref(train[0])
         y0 = np.zeros(model.n*model.n_labels)
         if not gridsearch:
             MAP = model.compute_MAP(y0)
         else:
             MAP = model.compute_MAP_with_gridsearch(y0, K, sigma)
         evidence = model.evidence_approx(MAP['x'])
-        # pref_ap = model.get_train_pref(MAP['x'])
-        # score_train = model.score(pref_ap, train_pref)
         pred_train = model.predict(train[0], MAP['x'])
-        predictions = model.predict(test[0], MAP['x'])
-        print(train[1])
-        print(np.argsort(pred_train, axis=1))
+        pred_test = model.predict(test[0], MAP['x'])
+        score_train_classif = model.label_score_rate(train[2], pred_train)
+        score_test_classif = model.label_score_rate(test[2], pred_test)
+        score_train_pref = model.label_pref_rate(train[1], pred_train)
+        score_test_pref = model.label_pref_rate(test[1], pred_test)
         print('Convergence of the minimizer of S : {}'.format(MAP['success']))
         print('Maximum a Posteriori : {}'.format(MAP['x']))
-        # print('Score on train: {}'.format(score_train))
         print('Evidence Approximation (p(D|f_MAP)) : {}'.format(evidence))
-        print(predictions)
-        # print('Probabilities : {}'.format(proba))
-        # print('Score on test: {}'.format(score))
-        # return {'MAP': MAP, 'score_train': score, 'evidence': evidence,
-        #        'proba_test': proba, 'score_test': score}
+        print('True best classes on train : {}'.format(train[2]))
+        print('Best classes predicted on train : {}'.format(np.argsort(pred_train, axis=1)[:, -1]))
+        print('True best classes on test : {}'.format(test[2]))
+        print('Best classes predicted on test : {}'.format(np.argsort(pred_test, axis=1)[:, -1]))
+        print('Mean label error on train: {}, and test: {}'.format(1-score_train_classif, 1-score_test_classif))
+        print('Mean pref error on train: {}, and test: {}'.format(1 - score_train_pref, 1 - score_test_pref))
+        if showgraph:
+            plt.subplot(1,2,1)
+            utils.pipeline_graph(train[1][0], 0, 'compute_all_edges')
+            plt.subplot(1,2,2)
+            utils.pipeline_graph(utils.compute_all_edges(np.array(pred_train[0]).argsort()[::-1]), 0,
+                                 'compute_all_edges')
+            plt.show()
+        return {'MAP': MAP, 'evidence': evidence, 'predictions train': pred_train,
+                'predictions test': pred_test}
