@@ -14,6 +14,7 @@ class Movielens():
         self.real_theta = np.empty(self.n_features)
         self.K = K
         self.sigma_IL = sigma_IL
+        self.MAP = None
 
     def get_new_user(self):
         """
@@ -44,46 +45,80 @@ class Movielens():
                        for i in range(data.shape[0])])
         return int(np.argmax(np.dot(kt, beta)))
 
-    def movie_suggestion(self, t, v, m, to_watch):
+    def movie_suggestion(self, t, v, m, to_watch, burnin):
         """
         :param t: current time
         :param v: features dataset, in order of movies watched
         :param m: current known preferences
         :param to_watch: movies that have not been tested yet
+        :param burnin: time limit of the training phase
         :return: indice of the suggestion in the original feature dataset
         """
         if t < 3:
             return int(np.random.choice(to_watch))
         else:
-            instances = v[:t]
-            model = IL.learning_instance_preference(inputs=[instances, m], K=self.K, sigma=self.sigma_IL)
-            model.tol = 1e-2
-            MAP = model.compute_MAP(np.zeros(t))['x']
+            if t < burnin:
+                self.instances = v[:t]
+                self.model = IL.learning_instance_preference(inputs=[self.instances, m],
+                                                             K=self.K, sigma=self.sigma_IL)
+                self.model.tol = 1e-2
+                self.MAP = self.model.compute_MAP(np.zeros(t))['x']
             test_instance = self.features[to_watch]
-            return to_watch[int(self.predict_movie(model, instances, test_instance, MAP))]
+            return to_watch[int(self.predict_movie(self.model, self.instances, test_instance, self.MAP))]
 
-    def sequential_suggestion(self, T):
+    def get_regret(self, r, to_watch):
+        best_rating = np.dot(self.features[to_watch], self.real_theta)
+        return np.max(best_rating)-r
+
+    def sequential_suggestion(self, T, burnin=np.inf):
         """
         :param T: Time Horizon
         :return: Rewards of the sequential suggestion
         """
         self.get_new_user()
         ratings = np.zeros(T)
+        cum_regret = np.zeros(T)
         movies = np.zeros(T, dtype='int64')
         to_watch = list(np.arange(self.n_movies, dtype='int64'))
         V = np.zeros((T, self.n_features))
         pref = []
         for t in tqdm(range(T)):
-            movies[t] = self.movie_suggestion(t, V, pref, to_watch)
-            to_watch.remove(movies[t])
-            V[t] = self.features[movies[t]]
+            movies[t] = self.movie_suggestion(t, V, pref, to_watch, burnin)
             ratings[t] = np.inner(self.real_theta, self.features[movies[t]]) + \
                          np.random.normal(scale=self.eta)
+            if t > 0:
+                cum_regret[t] = cum_regret[t-1] + self.get_regret(ratings[t], to_watch)
+            else:
+                cum_regret[0] = self.get_regret(ratings[0], to_watch)
+            to_watch.remove(movies[t])
+            V[t] = self.features[movies[t]]
             pref = self.update_pref(t, pref, ratings)
         return {'movies_list': movies, 'all_ratings': ratings,
-                'observed_preferences': pref}
+                'observed_preferences': pref, 'cumulative_regret': cum_regret}
+
+    def random_choice(self, T):
+        ratings = np.zeros(T)
+        cum_regret = np.zeros(T)
+        to_watch = list(np.arange(self.n_movies))
+        for t in range(T):
+            a = np.random.choice(to_watch)
+            ratings[t] = np.inner(self.real_theta, self.features[a])+ \
+                       np.random.normal(scale=self.eta)
+            if t > 0:
+                cum_regret[t] = cum_regret[t-1] + self.get_regret(ratings[t], to_watch)
+            else:
+                cum_regret[0] = self.get_regret(ratings[0], to_watch)
+            to_watch.remove(a)
+        return {'all_ratings': ratings, 'cumulative_regret': cum_regret}
 
 
+import matplotlib.pyplot as plt
 if __name__ == '__main__':
     model = Movielens()
-    print(model.sequential_suggestion(50))
+    model.eta = 1.
+    xp = model.sequential_suggestion(100, burnin=20)
+    regret = xp['cumulative_regret']
+    regret_random_policy = model.random_choice(100)['cumulative_regret']
+    plt.plot(regret)
+    plt.plot(regret_random_policy)
+    plt.show()
