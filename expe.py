@@ -82,7 +82,7 @@ def run_instance_xp_authors(n_expe, datasets, param='best', show_results=False, 
     pkl.dump(results, open('results.pkl', 'wb'))
 
 
-def run_instance_xp_authors_SVM(n_expe, datasets, K, C, show_results=False, print_callback=False):
+def run_instance_xp_authors_SVM(datasets, n_expe=20, K=10, C=1):
     results = {}
     l = len(datasets)
     for i, m in tqdm(enumerate(datasets), desc='Running experiments on '+ str(l) +' datasets', total=l):
@@ -95,6 +95,8 @@ def run_instance_xp_authors_SVM(n_expe, datasets, K, C, show_results=False, prin
             train, test = generator.get_input_train(n_pref_train), generator.get_input_test(n_pref_test)
             learnerHerb = SVM_InstancePref(train, K, C)
             learnerHar = CCSVM(train, K, C)
+            learnerHerb.fit()
+            learnerHar.fit()
             score_testHerb.append(1 -learnerHerb.score(test[0], test[1], train=False))
             score_testHar.append(1 - learnerHar.score(test[0], test[1], train=False))
             score_trainHerb.append(1 -learnerHerb.score())

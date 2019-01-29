@@ -89,7 +89,7 @@ class SVM_InstancePref:
     def fit(self):
         self.classifier.fit(self.Data, self.Label)
         try:
-            print(self.classifier.best_params_)
+            print("(Herbrich) SVM CV-Hyperparameters: K={gamma} and C={C}".format(**self.classifier.best_params_))
         except AttributeError:
             pass
 
@@ -120,7 +120,7 @@ class CCSVM:
     def fit(self):
         self.classifier.fit(self.Data, self.Label)
         try:
-            print(self.classifier.best_params_)
+            print("(Har_Peled) SVM CV-Hyperparameters: K={gamma} and C={C}".format(**self.classifier.best_params_))
         except AttributeError:
             pass
 

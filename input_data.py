@@ -4,7 +4,7 @@ import utils
 
 class pref_generator():
     def __init__(self, dataset, n=-1, d=-1):
-        self.X = utils.read_data(dataset, n, d)
+        self.X = utils.read_data_IL(dataset, n, d)
         self.nmax, self.dmax = self.X.shape
         self.n = self.nmax if n == -1 else n
         self.d = self.dmax if d == -1 else d
