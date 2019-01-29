@@ -5,11 +5,9 @@ import expe as xp
 import utils
 
 check_random = False
-check_label = True
+check_label = False
+check_authors_expe = True
 
-mapping_n_labels = {'sushia': 10, 'sushib': 100, 'movies': 7, 'german2005': 5, 'german2009': 5,
-                    'algae': 7, 'dna': 3, 'letter': 26, 'mnist': 10, 'satimage': 6, 'segment': 7,
-                    'usps': 10, 'waveform': 3}
 
 if __name__ == '__main__':
     if check_random:
@@ -26,11 +24,18 @@ if __name__ == '__main__':
         xp.run_label_xp(generator, model, train, test, K, sigma, gridsearch=False)
 
     if check_label:
-        n = 60
-        dataset = 'sushia'
+        n = 100
+        dataset = 'waveform'
         users, graphs, classes = utils.read_data_LL(dataset, n)
         train, test = utils.train_test_split(users, graphs, classes)
-        K, sigma = np.ones(mapping_n_labels[dataset])*1, 0.1
-        model = LL.learning_label_preference(inputs=train, K=K, sigma=sigma)
-        xp.run_label_xp(0, model, train, test, K, sigma, gridsearch=False)
+        K0, sigma0 = 1, 1
+        K, sigma = np.ones(utils.mapping_n_labels[dataset])*K0, sigma0
+        model = LL.learning_label_preference(inputs=train, K=K, sigma=sigma, print_callback=True)
+        xp.run_label_xp(model, train, test, K, sigma, show_results=False, gridsearch=False, showgraph=True, user=(5, 6))
+
+    if check_authors_expe:
+        datasets = ['dna']
+        n_expe = 1
+        xp.run_label_xp_authors(n_expe, datasets, param=[[0.01, 0.1, 1], [0.01, 0.1, 1]], show_results=False,
+                                showgraph=False, print_callback=False)
 
