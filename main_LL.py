@@ -3,6 +3,8 @@ import numpy as np
 import input_data as data
 import expe as xp
 import utils
+import itertools
+
 
 check_random = False
 check_label = False
@@ -35,10 +37,10 @@ if __name__ == '__main__':
         xp.run_label_xp(model, train, test, K, sigma, show_results=False, gridsearch=False, showgraph=True, user=(5, 6))
 
     if check_authors_expe:
-        datasets = ['dna', 'waveform']
+        datasets = ['dna', 'waveform', 'satimage', 'segment', 'usps', 'sushia', 'sushib', 'movies', 'algae']
         n_expe = 1
-        n_obs = 100
-        param = []
-        xp.run_label_xp_authors(n_expe, n_obs, datasets, param=param, show_results=False, showgraph=False,
+        param = [[j*10**i for (i,j) in itertools.product(range(-4, 3), range(1, 10))],
+                 [j * 10 ** i for (i, j) in itertools.product(range(-4, 1), range(1, 10))]]
+        xp.run_label_xp_authors(n_expe, datasets, param=param, show_results=False, showgraph=False,
                                 print_callback=False)
 

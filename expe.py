@@ -155,11 +155,13 @@ def run_label_xp(model, train, test, K, sigma, show_results=True, gridsearch=Fal
                 'Pref error train': 1-pref_score_train, 'Pref error test': 1-pref_score_test}
 
 
-def run_label_xp_authors(n_expe, n_obs, datasets, param='best', show_results=False, showgraph=False, print_callback=False):
+def run_label_xp_authors(n_expe, datasets, param='best', show_results=False, showgraph=False, print_callback=False):
     results = {}
     gridsearch = utils.gridsearchBool(param)
-    for i, m in enumerate(datasets):
+    l = len(datasets)
+    for i, m in tqdm(enumerate(datasets), desc='Running experiments on ' + str(l) +' datasets', total=l):
         b = utils.best_parameters[m]
+        n_obs = 800
         if param == 'best' and not gridsearch:
             K, sigma = b
         elif param != 'best' and not gridsearch:
@@ -187,5 +189,5 @@ def run_label_xp_authors(n_expe, n_obs, datasets, param='best', show_results=Fal
         print('Data set ' + m + ' : Mean pref error on train {:0.4f} ± {:0.3f}, mean pref error on test {:0.4f} ± {:0.3f}'
                                 '\n______________________________________________\n'. format(p_train, p_std_train, p_test, p_std_test))
         results[m] = l_train, l_std_train, l_test, l_std_test, p_train, p_std_train, p_test, p_std_test
-    pkl.dump(results, open('results_IL.pkl', 'wb'))
+    pkl.dump(results, open('results_LL.pkl', 'wb'))
 

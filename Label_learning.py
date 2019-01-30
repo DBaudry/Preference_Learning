@@ -172,11 +172,11 @@ class learning_label_preference:
                     self.all_inv_cov = [np.linalg.inv(cov) for cov in self.all_cov]
                     MAP = self.compute_MAP(y0)
                     evidence = self.evidence_approx(MAP['x'])
-                    print('K={}, sigma={} : evidence={}'.format(self.K, self.sigma, evidence))
+                    print('K={}, sigma={:0.4f} : evidence={:0.4f}'.format(self.K, self.sigma, evidence))
                 except:
-                    print('K={}, sigma={} : singular matrix'.format(self.K, self.sigma))
+                    print('K={}, sigma={:0.4f} : singular matrix'.format(self.K, self.sigma))
                     continue
-                if evidence > best_evidence:
+                if -1 > evidence > best_evidence:
                     best_evidence = evidence
                     best_K, best_sigma = self.K, self.sigma
                     best_MAP = MAP
