@@ -32,8 +32,8 @@ if __name__ == '__main__':
         xp.run_instance_xp(generator, model, train, test, K, sigma, gridsearch=False, show_results=True)
 
     if check_authors_expe:
-        datasets = ['abalone']  # ['pyrim', 'triazines', 'machine', 'housing']
-        n_expe = 1
+        datasets = ['pyrim', 'triazines', 'machine', 'housing']  # ['pyrim', 'triazines', 'machine', 'housing']
+        n_expe = 20
         # If you want to use the best parameters computed using gridsearching you should write param='best'.
         # If not, rather to use your own values or list of values for gridsearching, write param = [., .]
         # or param = [[., ., .], [., ., .]] (list of 2 lists)
@@ -41,7 +41,7 @@ if __name__ == '__main__':
         # param=[[0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 50, 100],
         # [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 50, 100]] and then refine according
         # to the best values returned
-        param = [[0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 50, 100],
-                 [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 50, 100]]
-        #param = 'best'
-        xp.run_instance_xp_authors(param=param, n_expe=n_expe, datasets=datasets, show_results=True, print_callback=True)
+        #param = [[0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 50, 100],
+        #         [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 50, 100]]
+        param = 'best'
+        xp.run_instance_xp_authors(param=param, n_expe=n_expe, datasets=datasets, show_results=False, print_callback=False)

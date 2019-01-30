@@ -67,6 +67,8 @@ def reshape_pref(pref):
 def ratio_n_obs(m_pref):
     return int(np.sqrt(2*m_pref))
 
+def n_max_LL(n):
+    return int(100/mapping_n_labels[n])
 
 def gridsearchBool(param):
     if param == 'best':
@@ -177,7 +179,7 @@ def read_data_LL(dataset, n):
 def train_test_split(users, graphs, classes):
     idx = np.random.choice(range(users.shape[0]), users.shape[0], replace=False)
     X = pd.DataFrame(min_max_scaler.fit_transform(users), columns=users.columns, index=users.index)
-    train_idx, test_idx = idx[0:int(0.75*len(idx))], idx[(int(0.75*len(idx))):]
+    train_idx, test_idx = idx[0:int(0.6*len(idx))], idx[(int(0.6*len(idx))):]
     users_train, users_test = X.iloc[train_idx, :], X.iloc[test_idx, :]
     graphs_train, graphs_test = [graphs[i] for i in train_idx], [graphs[i] for i in test_idx]
     classes_train, classes_test = classes[train_idx], classes[test_idx]
