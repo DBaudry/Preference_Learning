@@ -77,7 +77,8 @@ def randomTest(Data, Label):
 ##################  Herbrich  ##################
 class SVM_InstancePref:
     def __init__(self, inputs, K, C):
-        if not isinstance(K, list):
+        if not isinstance(K, list) and not isinstance(K, np.ndarray):
+
             self.classifier = SVC(gamma=K, C=C)
         else:
             parameters = {'C': C, 'gamma': K}
@@ -97,7 +98,7 @@ class SVM_InstancePref:
         if train:
             predic = []
             for pref, lab in zip(self.D, self.Label):
-                predic.append(self.classifier.predict([lab*(self.X[pref[0]]-self.X[pref[1]])]))
+                predic.append(self.classifier.predict([lab*(self.X[pref[0]]-self.X[pref[1]])])[0])
             return np.mean([predic[i] == self.Label[i] for i in range(len(predic))])
         else:
             Data_, Label_ = ProcessData(Data, Label)
@@ -106,9 +107,9 @@ class SVM_InstancePref:
 
 
 ##################  Har-Peled  ##################
-class CCSVM:
+class CCSVM_IL:
     def __init__(self, inputs, K, C):
-        if not isinstance(K, list):
+        if not isinstance(K, list) and not isinstance(K, np.ndarray):
             self.classifier = SVC(gamma=K, C=C)
         else:
             parameters = {'C': C, 'gamma': K}

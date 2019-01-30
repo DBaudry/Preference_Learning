@@ -7,6 +7,7 @@ import Label_learning as LL
 import utils
 import matplotlib.pyplot as plt
 from SVM_IL import *
+from SVM_LL import CCSVM_LL
 
 
 def run_instance_xp(gen, model, train, test, K, sigma, gridsearch=False, show_results=True):
@@ -75,15 +76,15 @@ def run_instance_xp_authors_SVM(datasets, n_expe=20, K=10, C=1):
     results = {}
     l = len(datasets)
     for i, m in tqdm(enumerate(datasets), desc='Running experiments on '+ str(l) +' datasets', total=l):
-        n_obs, n_features = ratio_n_obs(authors_n_pref[m]), -1
-        n_pref_train, n_pref_test = authors_n_pref[m], 20000
+        n_obs, n_features = utils.ratio_n_obs(utils.authors_n_pref[m]), -1
+        n_pref_train, n_pref_test = utils.authors_n_pref[m], 20000
         score_trainHerb, score_testHerb = [], []
         score_trainHar, score_testHar = [], []
         for expe in range(n_expe):
             generator = data.pref_generator(m, n_obs, n_features)
             train, test = generator.get_input_train(n_pref_train), generator.get_input_test(n_pref_test)
             learnerHerb = SVM_InstancePref(train, K, C)
-            learnerHar = CCSVM(train, K, C)
+            learnerHar = CCSVM_IL(train, K, C)
             learnerHerb.fit()
             learnerHar.fit()
             score_testHerb.append(1 -learnerHerb.score(test[0], test[1], train=False))
@@ -190,4 +191,34 @@ def run_label_xp_authors(n_expe, datasets, param='best', show_results=False, sho
                                 '\n______________________________________________\n'. format(p_train, p_std_train, p_test, p_std_test))
         results[m] = l_train, l_std_train, l_test, l_std_test, p_train, p_std_train, p_test, p_std_test
     pkl.dump(results, open('results_IL.pkl', 'wb'))
+
+
+def run_label_xp_authors_SVM(datasets, n_expe=20, K=10, C=1):
+    results = {}
+    for i, m in enumerate(datasets):
+        n_obs = 5000
+        label_error_train, label_error_test, pref_error_train, pref_error_test = [], [], [], []
+        for _ in range(n_expe):
+            print('Hello')
+            users, graphs, classes = utils.read_data_LL(m, n_obs)
+            train, test = utils.train_test_split(users, graphs, classes)
+            model = CCSVM_LL(train, K, C)
+            model.fit()
+            train_lab_err, train_pref_err = model.score()
+            test_lab_err, test_pref_err = model.score(*test, train=False)
+            label_error_train.append(train_lab_err)
+            pref_error_train.append(train_pref_err)
+            label_error_test.append(test_lab_err)
+            pref_error_test.append(test_pref_err)
+        l_train, l_std_train, l_test, l_std_test = np.mean(label_error_train), np.std(label_error_train),\
+                                               np.mean(label_error_test), np.std(label_error_test)
+        p_train, p_std_train, p_test, p_std_test = np.mean(pref_error_train), np.std(pref_error_train), \
+                                                   np.mean(pref_error_test), np.std(pref_error_test)
+        print('\n______________________________________________\n'
+              '(CCSVM) Data set ' + m + ' : Mean label error on train {:0.4f} ± {:0.3f}, mean label error on test {:0.4f} ± {:0.3f}'.
+              format(l_train, l_std_train, l_test, l_std_test))
+        print('(CCSVM) Data set ' + m + ' : Mean pref error on train {:0.4f} ± {:0.3f}, mean pref error on test {:0.4f} ± {:0.3f}'
+                                '\n______________________________________________\n'. format(p_train, p_std_train, p_test, p_std_test))
+        results[m] = l_train, l_std_train, l_test, l_std_test, p_train, p_std_train, p_test, p_std_test
+    pkl.dump(results, open('results_LL_CCSVM.pkl', 'wb'))
 

@@ -8,7 +8,7 @@ from itertools import chain
 ##################  Tools  ##################
 def Vec(x, i , k):
     "Vector of dim d embedded in a vector of dim kd"
-    Vec = np.zeros(k*len(x))
+    Vec = np.zeros((k+1)*len(x))
     Vec[i*len(x):(i+1)*len(x)] = x
     return Vec
 
@@ -19,24 +19,25 @@ def expansionTuple(x, i, j, k):
 
 def sampleExt(x, prefs, k):
     new_sample = [(expansionTuple(x, pref[0], pref[1], k), 1) for pref in prefs]
-    new_sample.extend([(expansionTuple(-x, pref[1], pref[0], k), -1) for pref in prefs])
+    new_sample.extend([(expansionTuple(x, pref[1], pref[0], k), -1) for pref in prefs])
     return new_sample
 
 
 ##################  CC-SVM  ##################
-class CCSVM:
+class CCSVM_LL:
     def __init__(self, inputs, K, C):
-        if not isinstance(K, list):
+        if not isinstance(K, list) and not isinstance(K, np.ndarray):
             self.classifier = SVC(gamma=K, C=C)
         else:
             parameters = {'C': C, 'gamma': K}
             self.classifier = GridSearchCV(SVC(), parameters, cv=5)
         self.X = inputs[0]
         self.D = inputs[1]
-        k = np.max([np.max(list(chain(*prefs))) for prefs in self.D])
+        self.classes = inputs[2]
+        self.k = np.max(self.classes)
         Data = []
         for index in range(len(self.D)):
-            Data.extend(sampleExt(self.X[index], self.D[index], k))
+            Data.extend(sampleExt(self.X[index], self.D[index], self.k))
         Data = list(zip(*Data))
         self.Data, self.Label = Data[0], Data[1]
 
@@ -47,25 +48,29 @@ class CCSVM:
         except AttributeError:
             pass
 
-    def score(self, Data=None, Label=None, train=True):
+    def score(self, Data=None, Label=None, Classes=None, train=True):
+        Label_error = []
+        Pref_error = []
         if train:
-            predic = []
-            for pref in self.Data[::2]:
-                predic.append(self.classifier.predict([pref]))
-            return np.mean(predic)
+            Data = self.X
+            Label = self.D
+            Classes = self.classes
+            k = self.k
         else:
-            Data_, _ = ExpansionData(Data, Label)
-            preds = self.classifier.predict(Data_[::2])
-            return np.mean(preds)
-
-    def predict(self, x):
-        return self.classifier.predict(x)
-
-    def predictions(self, Data, Label):
-        Data_, _ = ExpansionData(Data, Label)
-        a = self.predict(Data_)
-        return np.count_nonzero(np.array(a[::2]) + np.array(a[1::2])), \
-               [i for i, e in enumerate(np.array(a[::2]) + np.array(a[1::2])) if e != 0]
-
-
-
+            k = np.max(Classes)
+        for index in range(len(Label)):
+            Pref_error.append(
+                np.mean(
+                    [
+                        self.classifier.predict(
+                            [expansionTuple(Data[index], pref[0], pref[1], k)]
+                        )[0] != -1 for pref in Label[index]
+                    ]
+                )
+            )
+            Label_error.append(
+                any(self.classifier.predict(
+                            [expansionTuple(Data[index], Classes[index], label, k)]
+                        )[0] != -1 for label in range(k) if label != Classes[index])
+            )
+        return np.mean(Pref_error), np.mean(Label_error)
