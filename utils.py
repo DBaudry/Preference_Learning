@@ -1,64 +1,85 @@
 import pandas as pd
 import os
-import numpy as np
 import pickle as pkl
+import numpy as np
 import itertools
 from sklearn import preprocessing
 import networkx as nx
 import matplotlib.pyplot as plt
 from sklearn.datasets import load_svmlight_file
-import warnings
-warnings.filterwarnings("ignore")
 
-
-targets = {'abalone': 'rings', 'housing': 'class', 'machine': 'class', 'pyrim': 'activity',
-           'r_wpbc': 'Time', 'triazines': 'activity'}
+targets = {'abalone': 'rings', 'housing': 'class', 'machine': 'class', 'pyrim': 'activity', 'r_wpbc': 'Time',
+           'triazines': 'activity'}
 
 dataset_shapes = {'abalone': (4177, 9), 'housing': (506, 14), 'machine': (209, 7), 'pyrim': (74, 28),
                   'r_wpbc': (194, 33), 'triazines': (186, 61), 'algae': (316, 12), 'german2005': (412, 30),
-                  'german2009': (412, 33), 'movies': (602, 9), 'sushia': (5000, 11), 'sushib': (5000, 11), }
+                  'german2009': (412, 33), 'movies': (602, 9), 'sushia': (5000, 11), 'sushib': (5000, 11)}
 
-mapping_n_labels = {'sushia': 10, 'sushib': 100, 'movies': 7, 'german2005': 5, 'german2009': 5,
-                    'algae': 7, 'dna': 3, 'letter': 26, 'mnist': 10, 'satimage': 6, 'segment': 7,
-                    'usps': 10, 'waveform': 3, 'dna_cut': 3, 'letter_cut': 26, 'mnist_cut': 10, 'satimage_cut': 6,
-                    'segment_cut': 7, 'usps_cut': 10, 'waveform_cut': 3}
+mapping_n_labels = {'sushia': 10, 'sushib': 100, 'movies': 7, 'german2005': 5, 'german2009': 5, 'algae': 7, 'dna': 3,
+                    'letter': 26, 'mnist': 10, 'satimage': 6, 'segment': 7, 'usps': 10, 'waveform': 3}
 
-authors_n_pref = {'pyrim': 100, 'triazines': 300, 'machine': 500, 'housing': 700, 'abalone': 1000}
+authors_n_pref = {'pyrim': 100, 'triazines': 300, 'machine': 500, 'housing': 700, 'abalone': 1000
+                  }
 
+best_parameters = {'pyrim': (0.005, 0.007), 'triazines': (0.007, 0.006), 'machine': (0.03, 0.0006),
+                   'housing': (0.005, 0.001), 'abalone': (80, 0.025), 'sushia': 10, 'sushib': 100, 'movies': 7,
+                   'german2005': 5, 'german2009': 5, 'algae': 7, 'dna': (0.1, 0.001), 'letter': 26, 'mnist': 10,
+                   'satimage': (10, 0.1), 'segment': (10, 0.001), 'usps': (0.001, 0.005), 'waveform': (5, 0.001)}
 
-best_parameters = {'pyrim': (0.005, 0.007), 'triazines': (0.007, 0.006), 'machine': (0.03, 0.0006), 'diabetes': (1,2),
-                   'housing': (0.005, 0.001), 'abalone': (0.01, 0.005), 'sushia': 10, 'sushib': 100,
-                   'movies': 7, 'german2005': 5, 'german2009': 5, 'algae': 7, 'dna': 3, 'letter': 26,
-                   'mnist': 10, 'satimage': 6, 'segment': 7, 'usps': 10, 'waveform': 3, 'dna_cut': 3, 'letter_cut': 26,
-                   'mnist_cut': 10, 'satimage_cut': 6, 'segment_cut': 7, 'usps_cut': 10, 'waveform_cut': 3}
-
-
-n_attributes = {'waveform': 40, 'dna': 180, 'mnist': 772, 'letter': 16, 'satimage': 36, 'usps': 256, 'segment': 19}
-
-
-''' Short functions '''
+n_attributes = {'waveform': 40, 'dna': 180, 'mnist': 772, 'letter': 16, 'satimage': 36, 'usps': 256, 'segment': 19
+                }
 
 
 def combinations(n2, n1=0):
+    """ Instance Learning:
+    Construct all possible pairs of preference in list [n1, n1+1, ..., n2] : [(n1, n1+1), (n1, n1+2), ..., (n2-1, n2)]
+    :param n2: int, higher int
+    :param n1: int, lower int
+    :return: np.array, preferences tuples
+    """
     a = [[(i, j) for i in range(n1, j)] for j in range(n1, n2)]
     return np.array(list(itertools.chain.from_iterable(a)))
 
 
 def distance(x, y):
+    """
+    Compute L2 norm
+    :param x: np.array
+    :param y: np.array
+    :return: float
+    """
     if x is None or y is None:
         return np.inf
     return np.sum((x-y)**2)
 
 
 def n_pdf(x):
+    """
+    Compute pdf of N(0,1)
+    :param x: np.array, list of points
+    :return: np.array, pdf evaluated at each point
+    """
     return 1/np.sqrt(2*np.pi)*np.exp(-x**2/2)
 
 
 def gaussian_kernel(x, y, K):
+    """
+    Compute Gaussian kernel
+    :param x: np.array
+    :param y: np.array
+    :param K: float
+    :return: np.array
+    """
     return np.exp(-K/2.*np.sum((x-y)**2))
 
 
 def reshape_pref(pref):
+    """ Instance Learning:
+    Reindex preferences to avoid out of range error
+    :param pref: list of tuples
+    :return: - new_pref: np.array, new re-indexed preferences
+             - indices: np.array, unique item used in preferences ([(1,2), (3,2), (1,3)] -> [1, 2, 3])
+    """
     indices = np.unique(pref)
     mapping = {p: i for i, p in zip(range(len(indices)), indices)}
     new_pref = []
@@ -68,12 +89,20 @@ def reshape_pref(pref):
 
 
 def ratio_n_obs(m_pref):
+    """ Instance Learning:
+    Reduce number of observations for training. It relies on the authors' suggestion that n << m_pref
+    :param m_pref: int, number of preferences
+    :return: int, number n of observations such that m_pref = n * (n-1)/2
+    """
     return int(np.sqrt(2*m_pref))
 
-def n_max_LL(n):
-    return int(100/mapping_n_labels[n])
 
 def gridsearchBool(param):
+    """
+    Output if grid search is asked by user according to param
+    :param param: list of values or pair of values
+    :return: Bool
+    """
     if param == 'best':
         gridsearch=False
     else:
@@ -85,21 +114,25 @@ def gridsearchBool(param):
 
 
 def get_alpha(dim):
+    """ Instance Learning:
+    Compute coefficients for Cobb-Douglas utility function
+    :param dim: int, number of coefficients
+    :return: np.array
+    """
     rho = np.random.uniform()
     coeff = np.array([rho**(i+1) for i in range(dim)])
     return np.random.permutation(coeff/coeff.sum())
 
 
-# Function to read data for instance learning
-
-min_max_scaler = preprocessing.MinMaxScaler()
-
 def read_data_IL(data, n, d):
-    """
+    """ Instance Learning:
     Create a dataFrame containing both data (using file .data) and columns' labels (using file .domain)
     :param data: string, choice between abalone, diabetes, housing, machine, pyrim, r_wpbc, triazines
-    :return: pandas dataFrame
+    :param n: int, maximal number of observations to construct preferences pairs
+    :param d: int, maximal number of variables
+    :return: pandas dataframe
     """
+    min_max_scaler = preprocessing.MinMaxScaler()
     X = pd.read_csv(os.path.join('./Data/', data+'.data'), header=None, sep=',')
     col = list(pd.read_csv(os.path.join('./Data/', data+'.domain'), header=None, sep=':').iloc[:, 0].apply(lambda x: x.replace('\t', '').replace(' ','')))
     X.columns = col
@@ -113,12 +146,16 @@ def read_data_IL(data, n, d):
     return X
 
 
-# Function to read data for label learning
-# Datasets are chosen among : 'sushia', 'sushib', 'movies', 'german2005', 'german2009', 'algae', 'dna', 'letter'
-# 'mnist', 'satimage', 'segment', 'usps', 'waveform'
-
-
-def read_data_LL(dataset, n, cut=False):
+def read_data_LL(dataset, n):
+    """ Label Learning:
+    Load data from Data folder. Dataset can be taken in 'sushia', 'sushib', 'movies', 'german2005', 'german2009',
+    'algae', 'dna', 'letter', 'mnist', 'satimage', 'segment', 'usps', 'waveform'.
+    :param dataset: string, name of the dataset (see just above for possibilities)
+    :param n: int, maximal number of observations
+    :return: - users: np.array, observations used for constructing preferences
+             - graphs: list of list of tuples, preferences graphs for each user (a graph is a list of 2d-tuples/edges)
+             - classes: np.array, true classes for multi-classifcation or best preferred item (root of the graph)
+    """
     n = dataset_shapes[dataset][0] if n == -1 else n
     graphs = []
     if dataset == 'sushia':
@@ -166,15 +203,10 @@ def read_data_LL(dataset, n, cut=False):
             graphs.append(g)
             classes[user] = g[0][0]
 
-    elif dataset[-3:] == 'cut':
-        users_, classes_, clusters_ = pkl.load(open(os.path.join('./Data/', dataset + '.pkl'), 'rb'))
-        if dataset != 'waveform':
-            classes_ -= 1
-        labels = np.unique(classes_)
-        classes, graphs, idx = [], [], np.array([])
-        for cl in range(len(clusters_.keys())):
-            idx = np.concatenate((idx, np.random.choice(clusters_[cl][0], size=int(n / 5)))).astype(int)
-        classes, users = classes_[idx], users_.iloc[idx, :]
+    elif dataset == 'dna':
+        users, classes = pkl.load(open(os.path.join('./Data/', dataset + '.pkl'), 'rb'))
+        classes -= 1
+        labels = np.unique(classes)
         for c in classes:
             graphs.append([(c, l) for l in labels if c != l])
 
@@ -185,16 +217,25 @@ def read_data_LL(dataset, n, cut=False):
         if dataset == 'waveform':
             classes += 1
         labels = np.unique(classes)
-        graphs = []
         for c in classes[:n]:
             graphs.append([(c, l) for l in labels if c != l])
     return users, graphs, classes
 
 
 def train_test_split(users, graphs, classes):
+    """ Label Learning:
+    Split users, graphs and classes inputs in 2 subsets : train and test sets. Here we apply 40% for training
+    and 60% for testing as suggested in the article (4.2. classification)
+    :param users: np.array, observations used for constructing preferences
+    :param graphs: list of list of tuples, preferences graphs for each user (a graph is a list of 2d-tuples/edges)
+    :param classes: np.array, true classes for multi-classifcation or best preferred item (root of the graph)
+    :return: - train: users, graphs and classes used for training
+             - test: users, graphs and classes used for testing
+    """
+    min_max_scaler = preprocessing.MinMaxScaler()
     idx = np.random.choice(range(users.shape[0]), users.shape[0], replace=False)
     X = pd.DataFrame(min_max_scaler.fit_transform(users), columns=users.columns, index=users.index)
-    train_idx, test_idx = idx[0:int(0.6*len(idx))], idx[(int(0.6*len(idx))):]
+    test_idx, train_idx = idx[0:int(0.6*len(idx))], idx[(int(0.6*len(idx))):]
     users_train, users_test = X.iloc[train_idx, :], X.iloc[test_idx, :]
     graphs_train, graphs_test = [graphs[i] for i in train_idx], [graphs[i] for i in test_idx]
     classes_train, classes_test = classes[train_idx], classes[test_idx]
@@ -202,30 +243,37 @@ def train_test_split(users, graphs, classes):
     return train, test
 
 
-''' Functions to build preferences graphs'''
-
-
 def to_preference(data, user):
+    """ Label Learning:
+    From sushi datasets, transform input rows into
+    :param data: pandas dataframe, it contains preferences for each user (string of type '5 10 4 3' which means
+    that 5 is preferred to 10, preferred to 4, etc...)
+    :param user: int, user/index in the dataframe data
+    :return: np.array, preferences for user (np.array([5, 10, 4, 3]))
+    """
     x = data.iloc[user, 0]
     return np.array(str.split(x)[2:]).astype('int').tolist()
 
 
-def compute_linear_edges(a):
-    nodes = []
-    for i in range(len(a)-1):
-        nodes.append((a[i], a[i+1]))
-    return nodes
-
-
 def compute_all_edges(a):
-    nodes = []
+    """ Label learning:
+    From an array ([1, 2, 3]) construct the full graph ([(1, 2), (1, 3), (2, 3)])
+    :param a: list, preferences of a user
+    :return: list, all edges of the preferences graph of a user
+    """
+    edges = []
     for i in range(len(a)):
         for j in range(i+1,len(a)):
-           nodes.append((a[i], a[j]))
-    return nodes
+            edges.append((a[i], a[j]))
+    return edges
 
 
 def letters_to_numbers(s):
+    """ Label learning:
+    Replace letter in numbers to format preferences of data sets german2005, german2009, algae, top7movies
+    :param s: string
+    :return: string
+    """
     s = s.replace('a', '0').replace('b', '1').replace('c', '2')
     s = s.replace('d', '3').replace('e', '4').replace('f', '5')
     s = s.replace('g', '6')
@@ -233,6 +281,12 @@ def letters_to_numbers(s):
 
 
 def get_pref(s):
+    """ Label learning:
+    From a string ('a>bc>def') construct the full graph ([(a, b), (a, c), (a, d), (a, e), (a, f), (b, c), (b, d)...])
+    This function is used to format preferences from data sets : german2005, german2009, algae, top7movies
+    :param s: string
+    :return: list of tuples, complete graph of preferences
+    """
     s = letters_to_numbers(s)
     s = letters_to_numbers(s).split('>')
     b = [list(i) for i in s]
@@ -245,22 +299,17 @@ def get_pref(s):
     return list(itertools.chain.from_iterable(pref))
 
 
-def get_positions(a, mode):
-    if mode == 'compute_all_edges':
-        return None
-    else:
-        positions = {}
-        for x in a:
-            positions[x] = (a.index(x), 0)
-        return positions
-
-
-def pipeline_graph(data, mode, title):
+def pipeline_graph(data, title):
+    """ Label learning:
+    :param data: list of tuples, list of edges
+    :param title: string
+    :return: None, print graph
+    """
     G = nx.DiGraph()
     a = np.unique(data)
     G.add_nodes_from(a)
     G.add_edges_from(data)
-    nx.draw(G, pos=get_positions(a, mode), with_labels=True, font_weight='bold', node_size=1e3)
+    nx.draw(G, pos=None, with_labels=True, font_weight='bold', node_size=1e3)
     plt.title(title, fontsize=10)
 
 
