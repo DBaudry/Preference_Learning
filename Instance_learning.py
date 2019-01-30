@@ -202,13 +202,16 @@ class learning_instance_preference:
         score = 0
         proba_pref = []
         self.compute_Hessian_S(f_map)
-        M = np.linalg.inv(self.cov+np.linalg.inv(self.nu))
-        for p in pref:
-            proba = self.predict_single_pref(X[p[0]], X[p[1]], f_map, M)
-            proba_pref.append(proba)
-            if proba > 0.5:
-                score += 1
-        return score/len(pref), proba_pref
+        try:
+            M = np.linalg.inv(self.cov+np.linalg.inv(self.nu))
+            for p in pref:
+                proba = self.predict_single_pref(X[p[0]], X[p[1]], f_map, M)
+                proba_pref.append(proba)
+                if proba > 0.5:
+                    score += 1
+            return score/len(pref), proba_pref
+        except:
+            return np.nan, np.nan
 
     def get_train_pref(self, mp):
         """

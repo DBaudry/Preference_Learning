@@ -63,8 +63,8 @@ def run_instance_xp_authors(n_expe, datasets, param='best', show_results=False, 
             results = run_instance_xp(generator, model, train, test, K0, sigma0, gridsearch=gridsearch, show_results=show_results)
             score_train.append(1 - results['score_train'])
             score_test.append(1 - results['score_test'])
-        m_train, std_train, m_test, std_test = np.mean(score_train), np.std(score_train), np.mean(score_test), np.std(
-            score_test)
+        m_train, std_train, m_test, std_test = np.nanmean(score_train), np.nanstd(score_train), np.nanmean(score_test),\
+                                               np.nanstd(score_test)
         print('Data set ' + m + ' : Mean error on train {:0.4f} ± {:0.3f}, mean error on test {:0.4f} ± {:0.3f}'.
               format(m_train, std_train, m_test, std_test))
         results[m] = m_train, std_train, m_test, std_test

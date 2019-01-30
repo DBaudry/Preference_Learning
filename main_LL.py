@@ -37,10 +37,11 @@ if __name__ == '__main__':
         xp.run_label_xp(model, train, test, K, sigma, show_results=False, gridsearch=False, showgraph=True, user=(5, 6))
 
     if check_authors_expe:
-        datasets = ['dna', 'waveform', 'satimage', 'segment', 'usps', 'sushia', 'sushib', 'movies', 'algae']
+        datasets = ['dna_cut'] #['dna', 'waveform', 'satimage', 'segment', 'usps', 'sushia', 'sushib', 'movies', 'algae']
         n_expe = 1
-        param = [[j*10**i for (i,j) in itertools.product(range(-4, 3), range(1, 10))],
-                 [j * 10 ** i for (i, j) in itertools.product(range(-4, 1), range(1, 10))]]
+        #param = [[j*10**i for (i,j) in itertools.product(range(-7, 1), [1, 5])],
+        #         [j * 10 ** i for (i, j) in itertools.product(range(-7, 0), [1, 5])]]
+        param = [[0.001, 0.01, 0.1, 1, 10], [0.01, 0.1, 1, 10]]
         xp.run_label_xp_authors(n_expe, datasets, param=param, show_results=False, showgraph=False,
                                 print_callback=False)
 

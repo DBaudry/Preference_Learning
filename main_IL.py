@@ -32,7 +32,7 @@ if __name__ == '__main__':
         xp.run_instance_xp(generator, model, train, test, K, sigma, gridsearch=False, show_results=True)
 
     if check_authors_expe:
-        datasets = ['pyrim', 'triazines', 'machine', 'housing']  # ['pyrim', 'triazines', 'machine', 'housing']
+        datasets = ['machine', 'housing']  # ['pyrim', 'triazines', 'machine', 'housing']
         n_expe = 20
         # If you want to use the best parameters computed using gridsearching you should write param='best'.
         # If not, rather to use your own values or list of values for gridsearching, write param = [., .]
