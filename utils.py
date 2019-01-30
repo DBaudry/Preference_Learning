@@ -1,6 +1,7 @@
 import pandas as pd
 import os
 import numpy as np
+import pickle as pkl
 import itertools
 from sklearn import preprocessing
 import networkx as nx
@@ -19,7 +20,8 @@ dataset_shapes = {'abalone': (4177, 9), 'housing': (506, 14), 'machine': (209, 7
 
 mapping_n_labels = {'sushia': 10, 'sushib': 100, 'movies': 7, 'german2005': 5, 'german2009': 5,
                     'algae': 7, 'dna': 3, 'letter': 26, 'mnist': 10, 'satimage': 6, 'segment': 7,
-                    'usps': 10, 'waveform': 3}
+                    'usps': 10, 'waveform': 3, 'dna_cut': 3, 'letter_cut': 26, 'mnist_cut': 10, 'satimage_cut': 6,
+                    'segment_cut': 7, 'usps_cut': 10, 'waveform_cut': 3}
 
 authors_n_pref = {'pyrim': 100, 'triazines': 300, 'machine': 500, 'housing': 700, 'abalone': 1000}
 
@@ -27,7 +29,8 @@ authors_n_pref = {'pyrim': 100, 'triazines': 300, 'machine': 500, 'housing': 700
 best_parameters = {'pyrim': (0.005, 0.007), 'triazines': (0.007, 0.006), 'machine': (0.03, 0.0006), 'diabetes': (1,2),
                    'housing': (0.005, 0.001), 'abalone': (0.01, 0.005), 'sushia': 10, 'sushib': 100,
                    'movies': 7, 'german2005': 5, 'german2009': 5, 'algae': 7, 'dna': 3, 'letter': 26,
-                   'mnist': 10, 'satimage': 6, 'segment': 7, 'usps': 10, 'waveform': 3}
+                   'mnist': 10, 'satimage': 6, 'segment': 7, 'usps': 10, 'waveform': 3, 'dna_cut': 3, 'letter_cut': 26,
+                   'mnist_cut': 10, 'satimage_cut': 6, 'segment_cut': 7, 'usps_cut': 10, 'waveform_cut': 3}
 
 
 n_attributes = {'waveform': 40, 'dna': 180, 'mnist': 772, 'letter': 16, 'satimage': 36, 'usps': 256, 'segment': 19}
@@ -115,7 +118,7 @@ def read_data_IL(data, n, d):
 # 'mnist', 'satimage', 'segment', 'usps', 'waveform'
 
 
-def read_data_LL(dataset, n):
+def read_data_LL(dataset, n, cut=False):
     n = dataset_shapes[dataset][0] if n == -1 else n
     graphs = []
     if dataset == 'sushia':
@@ -163,10 +166,22 @@ def read_data_LL(dataset, n):
             graphs.append(g)
             classes[user] = g[0][0]
 
+    elif dataset[-3:] == 'cut':
+        users_, classes_, clusters_ = pkl.load(open(os.path.join('./Data/', dataset + '.pkl'), 'rb'))
+        if dataset != 'waveform':
+            classes_ -= 1
+        labels = np.unique(classes_)
+        classes, graphs, idx = [], [], np.array([])
+        for cl in range(len(clusters_.keys())):
+            idx = np.concatenate((idx, np.random.choice(clusters_[cl][0], size=int(n / 5)))).astype(int)
+        classes, users = classes_[idx], users_.iloc[idx, :]
+        for c in classes:
+            graphs.append([(c, l) for l in labels if c != l])
+
     else:
-        d = load_svmlight_file(os.path.join('./Data/', dataset+'.scale-0'), n_features=n_attributes[dataset])
+        d = load_svmlight_file(os.path.join('./Data/', dataset + '.scale-0'), n_features=n_attributes[dataset])
         users = pd.DataFrame(d[0].todense()).iloc[:n, :]
-        classes = np.array(d[1]).astype(int)-1
+        classes = np.array(d[1]).astype(int) - 1
         if dataset == 'waveform':
             classes += 1
         labels = np.unique(classes)
