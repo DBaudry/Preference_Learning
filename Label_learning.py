@@ -6,6 +6,7 @@ from scipy.optimize import minimize
 from utils import distance, n_pdf, gaussian_kernel
 from scipy.linalg import block_diag
 
+
 class learning_label_preference:
     def __init__(self, inputs, K, sigma, print_callback=True):
         self.init_param(inputs, K, sigma)
@@ -167,11 +168,15 @@ class learning_label_preference:
                 self.K = K
                 self.sigma = sigma
                 self.all_cov = [self.compute_cov(K) for K in self.K]
-                self.all_inv_cov = [np.linalg.inv(cov) for cov in self.all_cov]
-                MAP = self.compute_MAP(y0)
-                evidence = self.evidence_approx(MAP['x'])
-                print('\nK={}, sigma={} : evidence={}'.format(self.K, self.sigma, evidence))
-                if evidence > best_evidence:
+                try:
+                    self.all_inv_cov = [np.linalg.inv(cov) for cov in self.all_cov]
+                    MAP = self.compute_MAP(y0)
+                    evidence = self.evidence_approx(MAP['x'])
+                    print('K={}, sigma={:0.4f} : evidence={:0.4f}'.format(self.K, self.sigma, evidence))
+                except:
+                    print('K={}, sigma={:0.4f} : singular matrix'.format(self.K, self.sigma))
+                    continue
+                if -1 > evidence > best_evidence:
                     best_evidence = evidence
                     best_K, best_sigma = self.K, self.sigma
                     best_MAP = MAP
@@ -189,7 +194,6 @@ class learning_label_preference:
         S, H = self.compute_S(y), self.compute_Hessian_S(y)
         cov = block_diag(*self.all_cov)
         denom = np.linalg.det(np.dot(cov, H))
-        print(denom, -S, -0.5*np.log(np.abs(denom)), -(S+0.5*np.log(np.abs(denom))))
         return -(S+0.5*np.log(np.abs(denom)))
 
     def get_kernel(self, data, a):

@@ -43,7 +43,7 @@ if __name__ == '__main__':
         # to the best values returned
         #param = [[0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 50, 100],
         #         [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 50, 100]]
-        #param = 'best'
-        #xp.run_instance_xp_authors(param=param, n_expe=n_expe, datasets=datasets, show_results=False, print_callback=False)
         C, K = np.exp(np.arange(-2, 5)*np.log(10)), np.exp(np.arange(-3, 4)*np.log(10))
         xp.run_instance_xp_authors_SVM(datasets, n_expe=n_expe, K=K, C=C)
+        param = 'best'
+        xp.run_instance_xp_authors(param=param, n_expe=n_expe, datasets=datasets, show_results=False, print_callback=False)

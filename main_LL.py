@@ -3,11 +3,14 @@ import numpy as np
 import input_data as data
 import expe as xp
 import utils
+import itertools
+
 
 check_random = False
 check_label = False
 check_authors_expe = True
 
+np.random.seed(42312)
 
 if __name__ == '__main__':
     if check_random:
@@ -25,18 +28,21 @@ if __name__ == '__main__':
 
     if check_label:
         n = 100
-        dataset = 'waveform'
+        dataset = 'segment'
         users, graphs, classes = utils.read_data_LL(dataset, n)
         train, test = utils.train_test_split(users, graphs, classes)
-        K0, sigma0 = 1, 1
+        K0, sigma0 = 0.01, 1
         K, sigma = np.ones(utils.mapping_n_labels[dataset])*K0, sigma0
         model = LL.learning_label_preference(inputs=train, K=K, sigma=sigma, print_callback=True)
         xp.run_label_xp(model, train, test, K, sigma, show_results=False, gridsearch=False, showgraph=True, user=(5, 6))
 
     if check_authors_expe:
-        datasets = ['dna']
+        datasets = ['dna_cut'] #['dna', 'waveform', 'satimage', 'segment', 'usps', 'sushia', 'sushib', 'movies', 'algae']
         n_expe = 1
-        #xp.run_label_xp_authors(n_expe, datasets, param=[[0.01, 0.1, 1], [0.01, 0.1, 1]], show_results=False,
-        #                        showgraph=False, print_callback=False)
-        xp.run_label_xp_authors_SVM(datasets, n_expe=20, K=10, C=1)
+        #xp.run_label_xp_authors_SVM(datasets, n_expe=20, K=10, C=1)
+        #param = [[j*10**i for (i,j) in itertools.product(range(-7, 1), [1, 5])],
+        #         [j * 10 ** i for (i, j) in itertools.product(range(-7, 0), [1, 5])]]
+        param = [[0.001, 0.01, 0.1, 1, 10], [0.01, 0.1, 1, 10]]
+        xp.run_label_xp_authors(n_expe, datasets, param=param, show_results=False, showgraph=False,
+                                print_callback=False)
 
