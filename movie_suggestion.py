@@ -2,6 +2,7 @@ import Instance_learning as IL
 import numpy as np
 from tqdm import tqdm
 from utils import gaussian_kernel
+import matplotlib.pyplot as plt
 
 np.random.seed(211)
 
@@ -77,7 +78,6 @@ class Movielens():
         :param burnin: Length of the adaptation phase
         :return: Rewards of the sequential suggestion
         """
-        self.get_new_user()
         ratings = np.zeros(T)
         cum_regret = np.zeros(T)
         movies = np.zeros(T, dtype='int64')
@@ -92,11 +92,21 @@ class Movielens():
             to_watch.remove(movies[t])
             V[t] = self.features[movies[t]]
             pref = self.update_pref(t, pref, ratings)
+            if t > burnin:
+                to_watch.append(np.random.randint(self.n_movies))
         cum_regret = cum_regret.cumsum()
         return {'movies_list': movies, 'all_ratings': ratings,
                 'observed_preferences': pref, 'cumulative_regret': cum_regret}
 
     def gridsearch(self, K_list, sigma_list, n_expe, T, burnin):
+        """
+        :param K_list: list of K parameters
+        :param sigma_list: list of sigma_IL parameters
+        :param n_expe: number of experiment to average results for each set of parameters
+        :param T: time horizon
+        :param burnin: length of the adaptive phase
+        :return: dict with average cumulative regret for each set and different times
+        """
         times = [int(burnin/2), burnin, T-1]
         results = {str(times[0]): {}, str(times[1]): {}, str(times[2]): {}}
         for K in tqdm(K_list):
@@ -110,60 +120,59 @@ class Movielens():
                     results[str(tx)][str((K, sigma))] = regret[tx]
         return results
 
-    # Random suggestion
     def random_choice(self, T):
+        """
+        Propose a Random movie at each time step
+        :param T: Time Horizon
+        :return: Dict of results (cumulative regret,...)
+        """
         ratings = np.zeros(T)
+        movies = np.zeros(T)
         cum_regret = np.zeros(T)
         to_watch = list(np.arange(self.n_movies))
-        for t in range(T):
+        for t in tqdm(range(T)):
             a = np.random.choice(to_watch)
             ratings[t] = np.inner(self.real_theta, self.features[a])+ \
                        np.random.normal(scale=self.eta)
             cum_regret[t] = self.get_regret(ratings[t], to_watch)
+            movies[t] = a
             to_watch.remove(a)
+            to_watch.append(np.random.randint(self.n_movies))
         cum_regret = cum_regret.cumsum()
         return {'all_ratings': ratings, 'cumulative_regret': cum_regret}
 
-    # Thompson Sampling
-    def initPrior(self, a0=1, s0=10):
-        mu_0 = a0 * np.ones(self.n_features)
-        sigma_0 = s0 * np.eye(self.n_features)  # to adapt according to the true distribution of theta
-        return mu_0, sigma_0
-
-    def TS(self, T):
+    def epsilon_greedy(self, T, eps, t_explore):
         """
-        Implementation of Thomson Sampling (TS) algorithm for Linear Bandits with multivariate normal prior
-        :param T: int, time horizon
-        :return: np.arrays, reward obtained by the policy and sequence of chosen arms
+        Epsilon-greedy algorithm: the greedy policy is here to pick the movie in the list which is the closest
+        to the user's best rated movie (in the sense of the distance between the features). This movie is
+        chosen with probability 1-epsilon, and a random movie is selected with probability epsilon.
+        Before t_explore a random movie is always selected
+        :param T: Time Horizon
+        :param eps: probability of picking a random movie after exploration step
+        :return: Dict with all results
         """
-        arm_sequence, reward, regret = np.zeros(T), np.zeros(T), np.zeros(T)
-        mu_t, sigma_t = self.initPrior()
+        ratings = np.zeros(T)
+        movies = np.zeros(T)
+        cum_regret = np.zeros(T)
         to_watch = list(np.arange(self.n_movies))
-        for t in range(T):
-            theta_t = np.random.multivariate_normal(mu_t, sigma_t, 1).T
-            a_t = to_watch[np.argmax(np.dot(self.features[to_watch], theta_t))]
-            r_t, mu_t, sigma_t = self.updatePosterior(a_t, mu_t, sigma_t)
-            reward[t], arm_sequence[t] = r_t, a_t
-            regret[t] = np.max(np.dot(self.features, self.real_theta))-reward[t]
-            to_watch.remove(a_t)
-        regret = regret.cumsum()
-        return {'reward': reward, 'sequence of arm': arm_sequence, 'cumulative_regret': regret}
-
-    def updatePosterior(self, a, mu, sigma):
-        """
-        Update posterior mean and covariance matrix
-        :param arm: int, arm chose
-        :param mu: np.array, posterior mean vector
-        :param sigma: np.array, posterior covariance matrix
-        :return: float and np.arrays, reward obtained with arm a, updated means and covariance matrix
-        """
-        f = self.features[a]
-        r = np.inner(f, self.real_theta) + self.eta*np.random.normal()
-        s_inv = np.linalg.inv(sigma)
-        ffT = np.outer(f, f)
-        mu_ = np.dot(np.linalg.inv(s_inv + ffT / self.eta**2), np.dot(s_inv, mu) + r * f / self.eta**2)
-        sigma_ = np.linalg.inv(s_inv + ffT/self.eta**2)
-        return r, mu_, sigma_
+        for t in tqdm(range(T)):
+            u = np.random.uniform()
+            if t >= t_explore and u < 1-eps:
+                best_feature = self.features[int(movies[np.argmax(ratings[:t])])]
+                uniques = np.unique(to_watch)
+                feature_set = self.features[uniques]
+                idx = np.argmax((feature_set-best_feature).sum(axis=1)**2)
+                a = uniques[idx]
+            else:
+                a = np.random.choice(to_watch)
+            ratings[t] = np.inner(self.real_theta, self.features[a]) + \
+                       np.random.normal(scale=self.eta)
+            cum_regret[t] = self.get_regret(ratings[t], to_watch)
+            movies[t] = a
+            to_watch.remove(a)
+            to_watch.append(np.random.randint(self.n_movies))
+        cum_regret = cum_regret.cumsum()
+        return {'all_ratings': ratings, 'cumulative_regret': cum_regret}
 
     def LinUCB(self, T, lbda=1e-3, alpha=1e-1):
         """
@@ -174,12 +183,12 @@ class Movielens():
         :return: np.arrays, reward obtained by the policy and sequence of chosen arms
         """
         to_watch = list(np.arange(self.n_movies))
-        arm_sequence, reward, regret = np.zeros(T), np.zeros(T), np.zeros(T)
+        movies, reward, regret = np.zeros(T), np.zeros(T), np.zeros(T)
         a_t, b_t = np.random.randint(self.n_movies), np.zeros(self.n_features)
         to_watch.remove(a_t)
         A_t = lbda*np.eye(self.n_features)
         r_t = np.inner(self.features[a_t], self.real_theta) + self.eta*np.random.normal()
-        for t in range(T):
+        for t in tqdm(range(T)):
             A_t += np.outer(self.features[a_t], self.features[a_t])
             b_t += r_t*self.features[a_t]
             inv_A = np.linalg.inv(A_t)
@@ -187,33 +196,61 @@ class Movielens():
             beta_t = alpha*np.sqrt(np.diagonal(np.dot(np.dot(self.features, inv_A), self.features.T)))
             a_t = to_watch[np.argmax((np.dot(self.features, theta_t)+beta_t)[to_watch])]
             r_t = np.inner(self.real_theta, self.features[a_t])+self.eta*np.random.normal()
-            arm_sequence[t], reward[t] = a_t, r_t
+            movies[t], reward[t] = a_t, r_t
             regret[t] = np.max(np.inner(self.features, self.real_theta)[to_watch])-r_t
             to_watch.remove(a_t)
+            to_watch.append(np.random.randint(self.n_movies))
         regret = regret.cumsum()
-        return {'reward': reward, 'sequence of movies': arm_sequence, 'cumulative_regret': regret}
+        return {'reward': reward, 'sequence of movies': movies, 'cumulative_regret': regret}
+
+    def xp(self, T, n_algo, n_expe, burnin=30, eps=(0.4, 0.7, 0.9), t_exp=20,
+           ucb_param=(1e-3, 0.1), q=(0.025, 0.975), plot=True):
+        results = np.zeros((n_algo, n_expe, T))
+        for n in range(n_expe):
+            self.get_new_user()
+            results[2, n] = self.GP_suggestion(T, burnin=burnin)['cumulative_regret']
+            results[0, n] = self.random_choice(T)['cumulative_regret']
+            results[1, n] = model.LinUCB(T, lbda=ucb_param[0], alpha=ucb_param[1])['cumulative_regret']
+            for i, e in enumerate(eps):
+                results[3+i, n] = self.epsilon_greedy(T, e, t_exp)['cumulative_regret']
+        means = results.mean(axis=1)
+        q = np.quantile(results, q, axis=1)
+        if plot:
+            names = ['Random Policy', 'Linear UCB', 'GP model'] + ['Epsilon Greedy '+str(e) for e in eps]
+            color = ['y', 'tomato', 'steelblue']
+            color_fill = ['palegoldenrod', 'peachpuff', 'lightblue']
+            for i in range(n_algo):
+                if i < len(color):
+                    plt.plot(means[i], label=names[i], color=color[i])
+                    plt.fill_between(np.arange(T), q[0, i], q[1, i], color=color_fill[i])
+                else:
+                    plt.plot(means[i], label=names[i])
+            plt.yscale('log')
+            plt.legend()
+            plt.xlabel('Time-Horizon')
+            plt.ylabel('Cumulative regret (log-scale')
+            plt.show()
+            for i in range(n_algo):
+                if i < len(color):
+                    plt.plot(means[i], label=names[i], color=color[i])
+                    plt.fill_between(np.arange(T), q[0, i], q[1, i], color=color_fill[i])
+                else:
+                    plt.plot(means[i], label=names[i])
+            plt.legend()
+            plt.xlabel('Time-Horizon')
+            plt.ylabel('Cumulative regret')
+            plt.show()
 
 
-import matplotlib.pyplot as plt
 if __name__ == '__main__':
-    """
-    TODO: * implement an epsilon-greedy policy which would choose the movie 
-    with the closest feature vector to the best with probability 1-epsilon, else random choice
-    * Check to introduce a covariance matrix in Thompson sampling or remove it
-    """
-    model = Movielens(K=1e-3, sigma_IL=1e-3)
+    model = Movielens(K=1e-5, sigma_IL=1e-2)
     model.eta = 1.
-    T = 60
-    xp = model.GP_suggestion(T, burnin=30)['cumulative_regret']
-    regret_random_policy = model.random_choice(T)['cumulative_regret']
-    regret_TS = model.TS(T)['cumulative_regret']
-    regret_LinUCB = model.LinUCB(T, lbda=1e-3, alpha=1e-1)['cumulative_regret']
-    plt.plot(xp)
-    plt.plot(regret_random_policy)
-    plt.plot(regret_TS)
-    plt.plot(regret_LinUCB)
-    plt.show()
-    # K_list = [1e-4, 1e-3, 1e-2, 0.1, 1.]
+    T = 100
+    n_algo = 5
+    n_expe = 1000
+    model.xp(T, n_algo, n_expe, burnin=20, eps=(0.4, 0.8), t_exp=20,
+             q=(0.05, 0.95), ucb_param=(1e-3, 0.1), plot=True)
+    # K_list = [1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 0.1, 1.]
     # sigma_list = [1e-4, 1e-3, 1e-2, 0.1, 1.]
     # gs = model.gridsearch(K_list, sigma_list, 10, 50, 20)
     # print(gs)
