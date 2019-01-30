@@ -36,6 +36,7 @@ if __name__ == '__main__':
     if check_authors_expe:
         datasets = ['dna']
         n_expe = 1
-        xp.run_label_xp_authors(n_expe, datasets, param=[[0.01, 0.1, 1], [0.01, 0.1, 1]], show_results=False,
-                                showgraph=False, print_callback=False)
+        #xp.run_label_xp_authors(n_expe, datasets, param=[[0.01, 0.1, 1], [0.01, 0.1, 1]], show_results=False,
+        #                        showgraph=False, print_callback=False)
+        xp.run_label_xp_authors_SVM(datasets, n_expe=20, K=10, C=1)
 
