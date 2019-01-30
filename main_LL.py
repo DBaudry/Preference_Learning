@@ -37,12 +37,14 @@ if __name__ == '__main__':
         xp.run_label_xp(model, train, test, K, sigma, show_results=False, gridsearch=False, showgraph=True, user=(5, 6))
 
     if check_authors_expe:
-        datasets = ['dna_cut'] #['dna', 'waveform', 'satimage', 'segment', 'usps', 'sushia', 'sushib', 'movies', 'algae']
+        datasets = ['dna', 'waveform', 'satimage', 'segment', 'usps']
         n_expe = 1
         #xp.run_label_xp_authors_SVM(datasets, n_expe=20, K=10, C=1)
         #param = [[j*10**i for (i,j) in itertools.product(range(-7, 1), [1, 5])],
         #         [j * 10 ** i for (i, j) in itertools.product(range(-7, 0), [1, 5])]]
-        param = [[0.001, 0.01, 0.1, 1, 10], [0.01, 0.1, 1, 10]]
-        xp.run_label_xp_authors(n_expe, datasets, param=param, show_results=False, showgraph=False,
-                                print_callback=False)
+        #param = [[0.001, 0.01, 0.1, 1, 10], [0.01, 0.1, 1, 10]]
+        #xp.run_label_xp_authors(n_expe, datasets, param=param, show_results=False, showgraph=False,
+        #                        print_callback=False)
+        C, K = np.exp(np.arange(-2, 5)*np.log(10)), np.exp(np.arange(-3, 4)*np.log(10))
+        xp.run_label_xp_authors_SVM(datasets, n_expe=n_expe, K=K, C=C)
 

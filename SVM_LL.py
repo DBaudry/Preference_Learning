@@ -4,7 +4,6 @@ from random import shuffle
 from sklearn.model_selection import GridSearchCV
 from itertools import chain
 
-
 ##################  Tools  ##################
 def Vec(x, i , k):
     "Vector of dim d embedded in a vector of dim kd"
@@ -21,6 +20,16 @@ def sampleExt(x, prefs, k):
     new_sample = [(expansionTuple(x, pref[0], pref[1], k), 1) for pref in prefs]
     new_sample.extend([(expansionTuple(x, pref[1], pref[0], k), -1) for pref in prefs])
     return new_sample
+
+
+def random_index(n):
+    if n % 2 != 0:
+        index = np.arange(n - 1)
+    else:
+        index = np.arange(n)
+    shuffle(index)
+    splits = np.split(index, 2)
+    return splits[0]
 
 
 ##################  CC-SVM  ##################
@@ -59,18 +68,22 @@ class CCSVM_LL:
         else:
             k = np.max(Classes)
         for index in range(len(Label)):
+            Lrandom = random_index(len(Label[index]))
             Pref_error.append(
                 np.mean(
                     [
                         self.classifier.predict(
-                            [expansionTuple(Data[index], pref[0], pref[1], k)]
-                        )[0] != -1 for pref in Label[index]
+                            [expansionTuple(Data[index], pref[i in Lrandom], pref[i not in Lrandom], k)]
+                        )[0] != (-1)**(i in Lrandom) for i, pref in enumerate(Label[index])
                     ]
                 )
             )
             Label_error.append(
                 any(self.classifier.predict(
-                            [expansionTuple(Data[index], Classes[index], label, k)]
-                        )[0] != -1 for label in range(k) if label != Classes[index])
+                            [expansionTuple(Data[index],
+                                            [Classes[index], label][label not in Lrandom],
+                                            [Classes[index], label][label in Lrandom],
+                                            k)]
+                        )[0] != (-1)**(label not in Lrandom) for label in range(k) if label != Classes[index])
             )
         return np.mean(Pref_error), np.mean(Label_error)

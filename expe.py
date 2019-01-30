@@ -199,7 +199,6 @@ def run_label_xp_authors_SVM(datasets, n_expe=20, K=10, C=1):
         n_obs = 5000
         label_error_train, label_error_test, pref_error_train, pref_error_test = [], [], [], []
         for _ in range(n_expe):
-            print('Hello')
             users, graphs, classes = utils.read_data_LL(m, n_obs)
             train, test = utils.train_test_split(users, graphs, classes)
             model = CCSVM_LL(train, K, C)
