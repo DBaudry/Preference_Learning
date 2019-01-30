@@ -3,7 +3,16 @@ import copy
 import utils
 
 class pref_generator():
+    """
+
+    """
     def __init__(self, dataset, n=-1, d=-1):
+        """
+
+        :param dataset:
+        :param n:
+        :param d:
+        """
         self.X = utils.read_data_IL(dataset, n, d)
         self.nmax, self.dmax = self.X.shape
         self.n = self.nmax if n == -1 else n
@@ -11,6 +20,11 @@ class pref_generator():
         self.pairs_index = utils.combinations(self.n)  # pkl.load(open('./Data/combinations_'+dataset+'.pkl', 'rb'))
 
     def train_generator(self, m):
+        """
+
+        :param m:
+        :return:
+        """
         replace = True if m > len(self.pairs_index) else False
         idx = np.random.choice(len(self.pairs_index), m, replace=replace)
         pairs = self.pairs_index[idx]
@@ -18,6 +32,11 @@ class pref_generator():
         return self.training_pairs
 
     def test_generator(self, m):
+        """
+
+        :param m:
+        :return:
+        """
         if self.n == self.nmax:
             n1 = 0
         else:
@@ -30,6 +49,11 @@ class pref_generator():
         return self.testing_pairs
 
     def draw_preference(self, pairs):
+        """
+
+        :param pairs:
+        :return:
+        """
         pref = []
         for p in pairs:
             a, b = p
@@ -40,18 +64,33 @@ class pref_generator():
         return pref
 
     def get_input_train(self, m):
+        """
+
+        :param m:
+        :return:
+        """
         pairs = self.train_generator(m)
         pref, self.training_indices = utils.reshape_pref(self.draw_preference(pairs))
         data = self.X.iloc[self.training_indices, [i for i in range(self.d-1)] + [-1]]
         return [np.array(data), pref]
 
     def get_input_test(self, m):
+        """
+
+        :param m:
+        :return:
+        """
         pairs = self.test_generator(m)
         pref, self.testing_indices = utils.reshape_pref(self.draw_preference(pairs))
         data = self.X.iloc[self.testing_indices, [i for i in range(self.d-1)] + [-1]]
         return [np.array(data), pref]
 
     def get_true_pref(self, data):
+        """
+
+        :param data:
+        :return:
+        """
         p = data.shape[0]
         real_pref = np.zeros((p, p))
         X = np.array(self.X)
@@ -63,15 +102,29 @@ class pref_generator():
 
 
 class instance_pref_generator:
+    """
+
+    """
     def __init__(self, func, func_param):
         self.real_f = func
         self.f_param = func_param
 
     def generate_X(self, n, d):
+        """
+
+        :param n:
+        :param d:
+        :return:
+        """
         return np.random.uniform(size=(n, d))
 
     @staticmethod
     def draw_preference(n):
+        """
+
+        :param n:
+        :return:
+        """
         a = np.random.randint(n)
         b = np.random.randint(n)
         while b == a:
@@ -79,6 +132,13 @@ class instance_pref_generator:
         return a, b
 
     def add_a_pref(self, X, existing_pref, iter_max=10):
+        """
+
+        :param X:
+        :param existing_pref:
+        :param iter_max:
+        :return:
+        """
         n_iter, n = 0, X.shape[0]
         a, b = self.draw_preference(n)
         while (a, b) in existing_pref or (b, a) in existing_pref and n_iter < iter_max:
@@ -91,22 +151,48 @@ class instance_pref_generator:
             return b, a
 
     def set_m_preference(self, X, m):
+        """
+
+        :param X:
+        :param m:
+        :return:
+        """
         pref = []
         for i in range(m):
             pref.append(self.add_a_pref(X, pref))
         return pref
 
     def generate_X_pref(self, n, m, d):
+        """
+
+        :param n:
+        :param m:
+        :param d:
+        :return:
+        """
         X = self.generate_X(n, d)
         D = self.set_m_preference(X, m)
         return X, D
 
     def sample_datasets(self, n, d, m, mp):
+        """
+
+        :param n:
+        :param d:
+        :param m:
+        :param mp:
+        :return:
+        """
         train = self.generate_X_pref(n, m, d)
         test = self.set_m_preference(train[0], mp)
         return train, test
 
     def get_true_pref(self, X):
+        """
+
+        :param X:
+        :return:
+        """
         n = X.shape[0]
         pref = np.zeros((n, n))
         for i in range(n):
@@ -117,11 +203,21 @@ class instance_pref_generator:
 
 
 class label_pref_generator(instance_pref_generator):
+    """
+
+    """
     def __init__(self, func, func_param):
         super().__init__(func, func_param)
         self.n_label = len(self.real_f)
 
     def add_a_pref(self, x, existing_pref, iter_max=10):
+        """
+
+        :param x:
+        :param existing_pref:
+        :param iter_max:
+        :return:
+        """
         a, b = self.draw_preference(self.n_label)
         n_iter = 0
         while (a, b) in existing_pref or (b, a) in existing_pref and n_iter < iter_max:
@@ -149,5 +245,11 @@ class label_pref_generator(instance_pref_generator):
 
 
 def cobb_douglas(x, alpha):
+    """
+
+    :param x:
+    :param alpha:
+    :return:
+    """
     x_alpha = x**alpha
     return np.prod(x_alpha)

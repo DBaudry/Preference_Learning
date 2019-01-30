@@ -1,3 +1,4 @@
+
 import numpy as np
 from tqdm import tqdm
 import pickle as pkl
@@ -163,7 +164,7 @@ def run_label_xp_authors(n_expe, datasets, param='best', show_results=False, sho
         b = utils.best_parameters[m]
         n_obs = 800
         if param == 'best' and not gridsearch:
-            K, sigma = b
+            K, sigma = np.ones(utils.mapping_n_labels[m]) * b[0], b[1]
         elif param != 'best' and not gridsearch:
             K, sigma = np.ones(utils.mapping_n_labels[m]) * param[0], param[1]
         else:

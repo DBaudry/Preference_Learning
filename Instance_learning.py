@@ -188,7 +188,7 @@ class learning_instance_preference:
         new_sigma = np.sqrt(2*self.sigma**2+s_star[0, 0]+s_star[1, 1]-2*s_star[0, 1])
         return norm.cdf((mu_star[0]-mu_star[1])/new_sigma, loc=0, scale=1)
 
-    def predict(self, test_set, f_map):
+    def predict(self, test_set, f_map, get_proba=False):
         """
         :param test_set: tuple of length 2:
         * an array for the test X from which preferences are drawn
@@ -202,16 +202,26 @@ class learning_instance_preference:
         score = 0
         proba_pref = []
         self.compute_Hessian_S(f_map)
-        try:
-            M = np.linalg.inv(self.cov+np.linalg.inv(self.nu))
+        if not get_proba:
             for p in pref:
-                proba = self.predict_single_pref(X[p[0]], X[p[1]], f_map, M)
-                proba_pref.append(proba)
-                if proba > 0.5:
+                kt = np.zeros((self.n, 2))
+                kt[:, 0] = [gaussian_kernel(X[p[0]], self.X[i], self.K) for i in range(self.n)]
+                kt[:, 1] = [gaussian_kernel(X[p[1]], self.X[i], self.K) for i in range(self.n)]
+                mu_star = np.dot(kt.T, np.dot(self.inv_cov, f_map))
+                if (mu_star[0]-mu_star[1]) > 0:
                     score += 1
-            return score/len(pref), proba_pref
-        except:
-            return np.nan, np.nan
+            return score/len(pref), None
+        else:
+            try:
+                M = np.linalg.inv(self.cov+np.linalg.inv(self.nu))
+                for p in pref:
+                    proba = self.predict_single_pref(X[p[0]], X[p[1]], f_map, M)
+                    proba_pref.append(proba)
+                    if proba > 0.5:
+                        score += 1
+                return score/len(pref), proba_pref
+            except np.linalg.LinAlgError:
+                return np.nan, np.nan
 
     def get_train_pref(self, mp):
         """
