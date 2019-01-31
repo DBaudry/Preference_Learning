@@ -7,8 +7,8 @@ import itertools
 
 check_random = False
 check_label = False
-check_authors_expe = False
-check_SVM = True
+check_authors_expe = True
+check_SVM = False
 
 np.random.seed(42312)
 
