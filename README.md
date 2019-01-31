@@ -29,10 +29,9 @@ We define the problem as in the original article: different instances (represent
 want to know if an agent prefers an instance *a* over an instance *b*, but the only information we have about him is a set of *m*
 observed preferences. 
 
-Our class *learning_instance_preference* takes as input the design matrix of the instances and the set of observed preference, and follows
-the steps in the article to compute the *maximum a posteriori* of the function *f* over the available instances.
+Our class *learning_instance_preference* takes as input the design matrix of the instances and the set of observed preference, and follows the steps in the article to compute the *maximum a posteriori* of the function *f* over the available instances.
 Then this result is used to predict the value of *f* and perform pairwise comparison for any other set of instances.
-To compare this algorithm we also implemented two SVM algorithms A TOI DE JOUER THIB. 
+To compare this algorithm we also implemented two benchmark algorithms. These are adaptations from articles from Herbrich et al. and Har-Peled et al. (constraint classification). They mainly relies on the translation of preferences into vectors such that one can handle the problem as a classification problem. It is perform inside our classes *SVM_InstancePref* and *CCSVM_IL*.
 
 Results are tested using a simple accuracy score: we compare random pairs of instances and check the percentage of pairs that 
 are correctly predicted (instances can be drawn from the train set or any test set whether what we want to check).
@@ -49,7 +48,7 @@ edges involving this label in the preference graph. Accuracy will be based on th
 The class *learning_label_preference* takes as inputs the design matrix of the agent features and the list of the observed preference graphs
  (a preference graph being simply represented as the list of the preferences that form the edges). Considering this, the code is organized 
 exactly as the one for instance learning as the two algorithms are very similar.
-Again, SVM algorithms are used to benchmark this algorithm THIIIIIIIIIIIIBAAAAAAAAAAUT.
+Again, the constraint-classification SVM algorithm from Har-Peled et al. is used to benchmark this algorithm. The implementation of this algorithm is done in our class *CCSVM_LL*.
 
 The classification problem is again tested using the accuracy. For the ranking problem, we consider that the algorithm is
  wrong if the observed graph for a given agent is not consistent with the prediction (i.e if any edge is in the wrong direction).
