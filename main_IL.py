@@ -7,7 +7,8 @@ np.random.seed(42311)
 
 check_random = False
 check_real_data = False
-check_authors_expe = True
+check_authors_expe = False
+check_SVM = True
 
 if __name__ == '__main__':
     if check_random:
@@ -31,9 +32,9 @@ if __name__ == '__main__':
     if check_real_data:
         # Check_real_data does the same thing as before but with real data sets, namely data sets in Data folder.
         # Data is not simulated. Parameters keep their previous meaning.
-        n, d = 20, -1  # put to -1, -1 if you want the whole data set
-        m, mp = 400, 200
-        generator = data.pref_generator('housing', n, d)
+        n, d = 10, -1  # put to -1, -1 if you want the whole data set
+        m, mp = 20, 500
+        generator = data.pref_generator('pyrim', n, d)
         train, test = generator.get_input_train(m), generator.get_input_test(mp)
         K, sigma = 10., 0.1
         # K, sigma = [0.1, 1., 5., 10.], [0.01, 0.1, 1.]  # if you want to make a gridsearch
@@ -48,8 +49,8 @@ if __name__ == '__main__':
         # We reproduce here the experiments of the authors. Namely, we make 20 independent experiments of Instance
         # Learning Model on 5 datasets : 'machine', 'pyrim', 'triazines', 'housing', 'abalone'. We use the same number
         # of preferences for training and testing.
-        datasets = ['pyrim', 'triazines', 'machine', 'housing', 'abalone']  # ['pyrim', 'triazines', 'machine', 'housing']
-        n_expe = 20
+        datasets = ['pyrim']  # ['pyrim', 'triazines', 'machine', 'housing', 'abalone']
+        n_expe = 3
         # If you want to use the best parameters computed using gridsearching you should write param='best'.
         # If not, rather to use your own values or list of values for gridsearching, write param = [., .]
         # or param = [[., ., .], [., ., .]] (list of 2 lists)
@@ -57,12 +58,13 @@ if __name__ == '__main__':
         # param=[[0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 50, 100],
         # [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 50, 100]] and then refine according
         # to the best values returned
-        #param = [[0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 50, 100],
-        #         [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 50, 100]]
         param = 'best'
         xp.run_instance_xp_authors(param=param, n_expe=n_expe, datasets=datasets, show_results=False,
                                    print_callback=True)
 
+    if check_SVM:
         # for the SVM-based experiments
+        datasets = ['pyrim']  # ['pyrim', 'triazines', 'machine', 'housing', 'abalone']
+        n_expe = 3
         C, K = np.exp(np.arange(-2, 5)*np.log(10)), np.exp(np.arange(-3, 4)*np.log(10))
         xp.run_instance_xp_authors_SVM(datasets, n_expe=n_expe, K=K, C=C)
