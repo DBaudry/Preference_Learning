@@ -47,13 +47,13 @@ if __name__ == '__main__':
         xp.run_label_xp(model, train, test, K, sigma, show_results=False, gridsearch=False, showgraph=True, user=(5, 6))
 
     if check_authors_expe:
-        datasets = ['dna']  # ['dna', 'waveform', 'satimage', 'segment', 'usps']
+        datasets = ['sushia']  # ['dna', 'waveform', 'satimage', 'segment', 'usps']
         n_expe = 1
         # For gridsearch method you can start with
-        # param = [[j*10**i for (i,j) in itertools.product(range(-3, 1), [1, 5])],
-        #         [j * 10 ** i for (i, j) in itertools.product(range(-3, 0), [1, 5])]]
+        param = [[j*10**i for (i,j) in itertools.product(range(-5, 2), [1, 2, 5, 7])],
+                 [j * 10 ** i for (i, j) in itertools.product(range(-4, 2), [1, 2, 5, 7])]]
         # If you want to use best parameters set param = 'best'
-        param = 'best'
-        xp.run_label_xp_authors(n_expe, datasets, param=param, show_results=False, showgraph=False,
+        #param = 'best'
+        xp.run_label_xp_authors(n_expe, datasets, param=param, show_results=False, showgraph=True,
                                 print_callback=False)
 
