@@ -47,11 +47,15 @@ if __name__ == '__main__':
         xp.run_label_xp(model, train, test, K, sigma, show_results=False, gridsearch=False, showgraph=True, user=(5, 6))
 
     if check_authors_expe:
-        datasets = ['german2005', 'german2009']
+        datasets = ['sushia']  # ['dna', 'waveform', 'satimage', 'segment', 'usps']
         n_expe = 20
+        # For gridsearch method you can start with
+        param = [[j*10**i for (i,j) in itertools.product(range(-5, 2), [1, 2, 5, 7])],
+                 [j * 10 ** i for (i, j) in itertools.product(range(-4, 2), [1, 2, 5, 7])]]
+        # If you want to use best parameters set param = 'best'
         #param = 'best'
-        #xp.run_label_xp_authors(n_expe, datasets, param=param, show_results=False, showgraph=False,
-        #                       print_callback=False)
+        xp.run_label_xp_authors(n_expe, datasets, param=param, show_results=False, showgraph=True,
+                                print_callback=False)
 
         # for the SVM based methods
         C, K = np.exp(np.arange(-2, 5)*np.log(10)), np.exp(np.arange(-3, 4)*np.log(10))
