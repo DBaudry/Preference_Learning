@@ -7,8 +7,8 @@ np.random.seed(42311)
 
 check_random = False
 check_real_data = False
-check_authors_expe = False
-check_SVM = True
+check_authors_expe = True
+check_SVM = False
 
 if __name__ == '__main__':
     if check_random:
