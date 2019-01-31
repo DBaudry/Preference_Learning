@@ -16,7 +16,7 @@ Our code is divided into 4 types of files :
 functions that are useful in several files, and finally *expe.py* to define the procedures for the experiments in 
 order to make the main files easier to understand.
 
-So there are three ways to directly test our algorithms:
+So there are three ways to directly test our algorithms :
 * Run *main_IL.py* to test Instance Preference Learning
 * Run *main_LL.py* to test Label Preference Learning
 * Run *movie_suggestion.py* to test the experiment with the movie recommender
