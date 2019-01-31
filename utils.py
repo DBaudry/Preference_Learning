@@ -24,9 +24,9 @@ authors_n_pref = {'pyrim': 100, 'triazines': 300, 'machine': 500, 'housing': 700
 
 # some have not been determined
 best_parameters = {'pyrim': (0.005, 0.007), 'triazines': (0.007, 0.006), 'machine': (0.03, 0.0006),
-                   'housing': (0.005, 0.001), 'abalone': (80, 0.025), 'sushia': ('?', '?'), 'sushib': ('?', '?'),
-                   'movies': ('?', '?'), 'german2005': (2, 0.2), 'german2009': (2, 0.2), 'algae': ('?', '?'),
-                   'dna': (0.1, 0.001), 'letter': ('?', '?'), 'mnist': ('?', '?'), 'satimage': (10, 0.1),
+                   'housing': (0.005, 0.001), 'abalone': (80, 0.025), 'sushia': (-5, -5), 'sushib': (-5, -5),
+                   'movies': (-5, -5), 'german2005': (2, 0.2), 'german2009': (2, 0.2), 'algae': (-5, -5),
+                   'dna': (0.1, 0.001), 'letter': (-5, -5), 'mnist': (-5, -5), 'satimage': (10, 0.1),
                    'segment': (10, 0.001), 'usps': (0.001, 0.005), 'waveform': (5, 0.001)}
 
 n_attributes = {'waveform': 40, 'dna': 180, 'mnist': 772, 'letter': 16, 'satimage': 36, 'usps': 256, 'segment': 19
@@ -91,13 +91,14 @@ def reshape_pref(pref):
     return np.array(new_pref), indices
 
 
-def ratio_n_obs(m_pref):
+def ratio_n_obs(m_pref, p=0.5):
     """ Instance Learning:
     Reduce number of observations for training. It relies on the authors' suggestion that n << m_pref
     :param m_pref: int, number of preferences
-    :return: int, number n of observations such that m_pref = n * (n-1)/2
+    :param p: float
+    :return: int, number n of observations such that m_pref/p = n * (n-1)/2
     """
-    return int(2*np.sqrt(2*m_pref))
+    return int(np.sqrt(2*m_pref/p))
 
 
 def gridsearchBool(param):
