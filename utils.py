@@ -23,7 +23,7 @@ authors_n_pref = {'pyrim': 100, 'triazines': 300, 'machine': 500, 'housing': 700
 
 best_parameters = {'pyrim': (0.005, 0.007), 'triazines': (0.007, 0.006), 'machine': (0.03, 0.0006),
                    'housing': (0.005, 0.001), 'abalone': (80, 0.025), 'sushia': 10, 'sushib': 100, 'movies': 7,
-                   'german2005': 5, 'german2009': 5, 'algae': 7, 'dna': (0.1, 0.001), 'letter': 26, 'mnist': 10,
+                   'german2005': (2, 0.02), 'german2009': (2, 0.02), 'algae': 7, 'dna': (0.1, 0.001), 'letter': 26, 'mnist': 10,
                    'satimage': (10, 0.1), 'segment': (10, 0.001), 'usps': (0.001, 0.005), 'waveform': (5, 0.001)}
 
 n_attributes = {'waveform': 40, 'dna': 180, 'mnist': 772, 'letter': 16, 'satimage': 36, 'usps': 256, 'segment': 19

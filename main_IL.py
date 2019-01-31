@@ -48,7 +48,7 @@ if __name__ == '__main__':
         # We reproduce here the experiments of the authors. Namely, we make 20 independent experiments of Instance
         # Learning Model on 5 datasets : 'machine', 'pyrim', 'triazines', 'housing', 'abalone'. We use the same number
         # of preferences for training and testing.
-        datasets = ['machine']  # ['pyrim', 'triazines', 'machine', 'housing']
+        datasets = ['abalone']
         n_expe = 20
         # If you want to use the best parameters computed using gridsearching you should write param='best'.
         # If not, rather to use your own values or list of values for gridsearching, write param = [., .]
@@ -62,5 +62,7 @@ if __name__ == '__main__':
         param = 'best'
         xp.run_instance_xp_authors(param=param, n_expe=n_expe, datasets=datasets, show_results=False,
                                    print_callback=True)
-        # C, K = np.exp(np.arange(-2, 5)*np.log(10)), np.exp(np.arange(-3, 4)*np.log(10))
-        # xp.run_instance_xp_authors_SVM(datasets, n_expe=n_expe, K=K, C=C)
+
+        # for the SVM-based experiments
+        C, K = np.exp(np.arange(-2, 5)*np.log(10)), np.exp(np.arange(-3, 4)*np.log(10))
+        xp.run_instance_xp_authors_SVM(datasets, n_expe=n_expe, K=K, C=C)

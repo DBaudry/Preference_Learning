@@ -6,23 +6,27 @@ from itertools import chain
 
 ##################  Tools  ##################
 def Vec(x, i , k):
-    "Vector of dim d embedded in a vector of dim kd"
+    """Vector of dim d embedded in a vector of dim kd"""
     Vec = np.zeros((k+1)*len(x))
     Vec[i*len(x):(i+1)*len(x)] = x
     return Vec
 
 
 def expansionTuple(x, i, j, k):
+    """Translation of preference into a vector according to the methodology from Har-Peled et al."""
     return Vec(x, i, k) - Vec(x, j, k)
 
 
 def sampleExt(x, prefs, k):
+    """Generation of a dataset suited to the classification problem form the preferences in prefs, according to the
+    methodology of Har-Peled et al."""
     new_sample = [(expansionTuple(x, pref[0], pref[1], k), 1) for pref in prefs]
     new_sample.extend([(expansionTuple(x, pref[1], pref[0], k), -1) for pref in prefs])
     return new_sample
 
 
 def random_index(n):
+    """Randomly select half of the integers between 0 and n-1."""
     if n % 2 != 0:
         index = np.arange(n - 1)
     else:
@@ -66,7 +70,7 @@ class CCSVM_LL:
             Classes = self.classes
             k = self.k
         else:
-            k = np.max(Classes)
+            k = self.k
         for index in range(len(Label)):
             Lrandom = random_index(len(Label[index]))
             Pref_error.append(

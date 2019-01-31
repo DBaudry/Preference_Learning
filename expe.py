@@ -74,6 +74,14 @@ def run_instance_xp_authors(n_expe, datasets, param='best', show_results=False, 
 
 
 def run_instance_xp_authors_SVM(datasets, n_expe=20, K=10, C=1):
+    """
+    :param datasets: list of strings which are the name of the datasets studied.
+    :param n_expe: The number of repeated experience on the datasets.
+    :param K: Gamma parameter for the SVM
+    :param C: Complexity parameter for the SVM
+    This function applies repeatedly the algorithm inspired from the methodology in the articles from Herbrich et al.
+    and Har-Peled et al.on a set of datasets, in an instance learning problem.
+    """
     results = {}
     l = len(datasets)
     for i, m in tqdm(enumerate(datasets), desc='Running experiments on '+ str(l) +' datasets', total=l):
@@ -195,13 +203,21 @@ def run_label_xp_authors(n_expe, datasets, param='best', show_results=False, sho
 
 
 def run_label_xp_authors_SVM(datasets, n_expe=20, K=10, C=1):
+    """
+    :param datasets: list of strings which are the name of the datasets studied.
+    :param n_expe: The number of repeated experience on the datasets.
+    :param K: Gamma parameter for the SVM
+    :param C: Complexity parameter for the SVM
+    This function applies repeatedly the CCSVM algorithm on a set of datasets, in a label learning problem.
+    """
     results = {}
     for i, m in enumerate(datasets):
-        n_obs = 5000
+        n_obs = 800
         label_error_train, label_error_test, pref_error_train, pref_error_test = [], [], [], []
         for _ in range(n_expe):
             users, graphs, classes = utils.read_data_LL(m, n_obs)
             train, test = utils.train_test_split(users, graphs, classes)
+            print(max(test[2]), max(train[2]))
             model = CCSVM_LL(train, K, C)
             model.fit()
             train_lab_err, train_pref_err = model.score()
@@ -221,4 +237,5 @@ def run_label_xp_authors_SVM(datasets, n_expe=20, K=10, C=1):
                                 '\n______________________________________________\n'. format(p_train, p_std_train, p_test, p_std_test))
         results[m] = l_train, l_std_train, l_test, l_std_test, p_train, p_std_train, p_test, p_std_test
     pkl.dump(results, open('results_LL_CCSVM.pkl', 'wb'))
+
 

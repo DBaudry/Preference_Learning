@@ -6,6 +6,13 @@ from sklearn.model_selection import GridSearchCV
 
 ##################  Tools  ##################
 def ProcessData(Data, Label):
+    """
+    :param Data: Set of covariates
+    :param Label: Label for the classification
+    :return: A data and a label set transformed according to the methodology presented by Herbrich et al., with a random
+    inversion of the order of tuple preference (i.e. some u_k > v_k are seen as v_k > u_k and should be classified as
+    -1 instead of 1, the others should be classified as 1).
+    """
     Data_ = []
     Label_ = []
     if len(Label) % 2 != 0:
@@ -33,6 +40,11 @@ def ProcessData(Data, Label):
 
 
 def ExpansionData(Data, Label):
+    """
+    :param Data: Set of covariates
+    :param Label: Label for the classification
+    :return: A data and a label set fully transformed according to the methodology presented by Har-Peled et al.
+    """
     Data_ = []
     Label_ = []
     for pref in Label:
@@ -47,6 +59,12 @@ def ExpansionData(Data, Label):
 
 
 def randomTest(Data, Label):
+    """
+    :param Data: Set of covariates
+    :param Label: Label for the classification
+    :return: A data and a label set fully transformed according to the methodology presented by Har-Peled et al. Each
+    sample results in only one sample (randomly seen as (u_k>v_k,1) or (v_k>u_k,-1)).
+    """
     Data_ = []
     Label_ = []
     if len(Label) % 2 != 0:

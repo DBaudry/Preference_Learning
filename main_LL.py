@@ -47,11 +47,13 @@ if __name__ == '__main__':
         xp.run_label_xp(model, train, test, K, sigma, show_results=False, gridsearch=False, showgraph=True, user=(5, 6))
 
     if check_authors_expe:
-        datasets = ['dna', 'waveform', 'satimage', 'segment', 'usps']
-        n_expe = 1
+        datasets = ['german2005', 'german2009']
+        n_expe = 20
+        #param = 'best'
+        #xp.run_label_xp_authors(n_expe, datasets, param=param, show_results=False, showgraph=False,
+        #                       print_callback=False)
+
+        # for the SVM based methods
         C, K = np.exp(np.arange(-2, 5)*np.log(10)), np.exp(np.arange(-3, 4)*np.log(10))
         xp.run_label_xp_authors_SVM(datasets, n_expe=n_expe, K=K, C=C)
-        # param = 'best'
-        # xp.run_label_xp_authors(n_expe, datasets, param=param, show_results=False, showgraph=False,
-                                print_callback=False)
 
