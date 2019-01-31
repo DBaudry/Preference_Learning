@@ -17,7 +17,7 @@ class pref_generator():
         self.nmax, self.dmax = self.X.shape
         self.n = self.nmax if n == -1 else n
         self.d = self.dmax if d == -1 else d
-        self.pairs_index = utils.combinations(self.n)  # pkl.load(open('./Data/combinations_'+dataset+'.pkl', 'rb'))
+        self.pairs_index = utils.combinations(self.n)
 
     def train_generator(self, m):
         """

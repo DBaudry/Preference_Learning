@@ -150,7 +150,7 @@ class learning_label_preference:
             m = minimize(self.compute_S, y, method='Newton-CG', jac=self.compute_grad_S,
                          hess=self.compute_Hessian_S, tol=1e-4, callback=self.callbackF)
         else:
-            m = minimize(self.compute_S, y, method='Newton-CG', jac=self.compute_grad_S,
+            m = minimize(self.compute_S, y, method='L-BFGS-B', jac=self.compute_grad_S,
                          hess=self.compute_Hessian_S, tol=1e-4)
         return m
 

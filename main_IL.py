@@ -48,7 +48,7 @@ if __name__ == '__main__':
         # We reproduce here the experiments of the authors. Namely, we make 20 independent experiments of Instance
         # Learning Model on 5 datasets : 'machine', 'pyrim', 'triazines', 'housing', 'abalone'. We use the same number
         # of preferences for training and testing.
-        datasets = ['machine']  # ['pyrim', 'triazines', 'machine', 'housing']
+        datasets = ['pyrim', 'triazines', 'machine', 'housing', 'abalone']  # ['pyrim', 'triazines', 'machine', 'housing']
         n_expe = 20
         # If you want to use the best parameters computed using gridsearching you should write param='best'.
         # If not, rather to use your own values or list of values for gridsearching, write param = [., .]

@@ -7,13 +7,14 @@ from sklearn import preprocessing
 import networkx as nx
 import matplotlib.pyplot as plt
 from sklearn.datasets import load_svmlight_file
+import warnings
+warnings.filterwarnings("ignore")
 
 targets = {'abalone': 'rings', 'housing': 'class', 'machine': 'class', 'pyrim': 'activity', 'r_wpbc': 'Time',
            'triazines': 'activity'}
 
 dataset_shapes = {'abalone': (4177, 9), 'housing': (506, 14), 'machine': (209, 7), 'pyrim': (74, 28),
-                  'r_wpbc': (194, 33), 'triazines': (186, 61), 'algae': (316, 12), 'german2005': (412, 30),
-                  'german2009': (412, 33), 'movies': (602, 9), 'sushia': (5000, 11), 'sushib': (5000, 11)}
+                  'r_wpbc': (194, 33), 'triazines': (186, 61)}
 
 mapping_n_labels = {'sushia': 10, 'sushib': 100, 'movies': 7, 'german2005': 5, 'german2009': 5, 'algae': 7, 'dna': 3,
                     'letter': 26, 'mnist': 10, 'satimage': 6, 'segment': 7, 'usps': 10, 'waveform': 3}
@@ -21,10 +22,12 @@ mapping_n_labels = {'sushia': 10, 'sushib': 100, 'movies': 7, 'german2005': 5, '
 authors_n_pref = {'pyrim': 100, 'triazines': 300, 'machine': 500, 'housing': 700, 'abalone': 1000
                   }
 
+# some have not been determined
 best_parameters = {'pyrim': (0.005, 0.007), 'triazines': (0.007, 0.006), 'machine': (0.03, 0.0006),
-                   'housing': (0.005, 0.001), 'abalone': (80, 0.025), 'sushia': 10, 'sushib': 100, 'movies': 7,
-                   'german2005': 5, 'german2009': 5, 'algae': 7, 'dna': (0.1, 0.001), 'letter': 26, 'mnist': 10,
-                   'satimage': (10, 0.1), 'segment': (10, 0.001), 'usps': (0.001, 0.005), 'waveform': (5, 0.001)}
+                   'housing': (0.005, 0.001), 'abalone': (80, 0.025), 'sushia': ('?', '?'), 'sushib': ('?', '?'),
+                   'movies': ('?', '?'), 'german2005': (2, 0.2), 'german2009': (2, 0.2), 'algae': ('?', '?'),
+                   'dna': (0.1, 0.001), 'letter': ('?', '?'), 'mnist': ('?', '?'), 'satimage': (10, 0.1),
+                   'segment': (10, 0.001), 'usps': (0.001, 0.005), 'waveform': (5, 0.001)}
 
 n_attributes = {'waveform': 40, 'dna': 180, 'mnist': 772, 'letter': 16, 'satimage': 36, 'usps': 256, 'segment': 19
                 }
@@ -94,7 +97,7 @@ def ratio_n_obs(m_pref):
     :param m_pref: int, number of preferences
     :return: int, number n of observations such that m_pref = n * (n-1)/2
     """
-    return int(np.sqrt(2*m_pref))
+    return int(2*np.sqrt(2*m_pref))
 
 
 def gridsearchBool(param):
@@ -264,7 +267,7 @@ def compute_all_edges(a):
     edges = []
     for i in range(len(a)):
         for j in range(i+1,len(a)):
-            edges.append((a[i], a[j]))
+            edges.append((a[j], a[i]))
     return edges
 
 
@@ -305,6 +308,7 @@ def pipeline_graph(data, title):
     :param title: string
     :return: None, print graph
     """
+    print(data)
     G = nx.DiGraph()
     a = np.unique(data)
     G.add_nodes_from(a)
