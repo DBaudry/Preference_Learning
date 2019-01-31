@@ -16,7 +16,7 @@ Our code is divided into 4 types of files:
 functions that are useful in several files, and finally *expe.py* to define the procedures for the experiments in 
 order to make the main files easier to understand.
 
-So there are three ways to directly test our alogrithm:
+So there are three ways to directly test our algorithms:
 * Run *main_IL.py* to test Instance Preference Learning
 * Run *main_LL.py* to test Label Preference Learning
 * Run *movie_suggestion.py* to test the experiment with the movie recommender
@@ -60,8 +60,6 @@ For this part we used the MovieLens database to build a user-movie matrix M wher
 Then a low-rank matrix factorization has been used to decompose this matrix in $M=UV^T$ (explained in the guidelines [here](https://github.com/DBaudry/Preference_Learning/blob/master/Articles/homework%20Linear%20UCB%20MVA.pdf)), where U is a
 matrix containing user's features and V a matrix containing movie's features. So the rating M(i,j) is just the scalar product between u(i)
  and v(j).
-
-### Cold Start problem with Gaussian Processes
 
 We considered the cold start problem where a new user joins the platform and we need to learn his preferences. We used the Instance
 Preference Learning for this problem: we do not observe u but we have the complete instance matrix V, and we solve this problem sequentially as:
