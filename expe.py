@@ -114,6 +114,11 @@ def run_instance_xp_authors_SVM(datasets, n_expe=20, K=10, C=1):
             score_testHar.append(1 - learnerHar.score(test[0], test[1], train=False))
             score_trainHerb.append(1 -learnerHerb.score())
             score_trainHar.append(1 - learnerHar.score())
+            print('Har-Peled: Error on train: {:0.4f}, error on test: {:0.4f}'.
+                  format(score_trainHar[-1], score_testHar[-1]))
+            print('Herbrich: Error on train: {:0.4f}, error on test: {:0.4f}'.
+                  format(score_trainHerb[-1], score_testHerb[-1]))
+
         m_trainHerb, std_trainHerb, m_testHerb, std_testHerb = np.mean(score_trainHerb), np.std(score_trainHerb), \
                                                                np.mean(score_testHerb), np.std(score_testHerb)
         m_trainHar, std_trainHar, m_testHar, std_testHar = np.mean(score_trainHar), np.std(score_trainHar),\
