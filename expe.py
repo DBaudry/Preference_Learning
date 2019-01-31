@@ -134,7 +134,7 @@ def run_instance_xp_authors_SVM(datasets, n_expe=20, K=10, C=1):
     pkl.dump(results, open('resultsSVM.pkl', 'wb'))
 
 
-def run_label_xp(model, train, test, K, sigma, show_results=True, gridsearch=False, showgraph=False, user=(0,1)):
+def run_label_xp(gen, model, train, test, K, sigma, show_results=True, gridsearch=False, showgraph=False, user=(0,1), random=False):
     """ Label Learning:
     :param gen: label_pref_generator object
     :param model: learning_label_preference object
@@ -162,17 +162,18 @@ def run_label_xp(model, train, test, K, sigma, show_results=True, gridsearch=Fal
         MAP = model.compute_MAP_with_gridsearch(y0, K, sigma)
     evidence = model.evidence_approx(MAP['x'])
     pred_train, pred_test = model.predict(train[0], MAP['x']), model.predict(test[0], MAP['x'])
-    label_score_train = model.label_score_rate(train[2], pred_train)
-    label_score_test = model.label_score_rate(test[2], pred_test)
+    label_score_train = model.label_score_rate(train[2], pred_train) if not random else np.nan
+    label_score_test = model.label_score_rate(test[2], pred_test) if not random else np.nan
     pref_score_train = model.label_pref_rate(train[1], pred_train)
     pref_score_test = model.label_pref_rate(test[1], pred_test)
     if show_results:
         print('Convergence of the minimizer of S : {}'.format(MAP['success']))
         print('Maximum a Posteriori : {}'.format(MAP['x']))
         print('Evidence Approximation (p(D|f_MAP)) : {}'.format(evidence))
-        print('True best classes on train : {}'.format(train[2]))
+        if not random:
+            print('True best classes on train : {}'.format(train[2]))
+            print('True best classes on test : {}'.format(test[2]))
         print('Best classes predicted on train : {}'.format(np.argsort(pred_train, axis=1)[:, -1]))
-        print('True best classes on test : {}'.format(test[2]))
         print('Best classes predicted on test : {}'.format(np.argsort(pred_test, axis=1)[:, -1]))
     print('Mean label error on train: {:0.4f}, and test: {:0.4f}'.format(1 - label_score_train, 1 - label_score_test))
     print('Mean pref error on train: {:0.4f}, and test: {:0.4f}'.format(1 - pref_score_train, 1 - pref_score_test))
@@ -232,7 +233,7 @@ def run_label_xp_authors(n_expe, datasets, param='best', show_results=False, sho
             users, graphs, classes = utils.read_data_LL(m, n_obs)
             train, test = utils.train_test_split(users, graphs, classes)
             model = LL.learning_label_preference(inputs=train, K=K, sigma=sigma, print_callback=print_callback)
-            r = run_label_xp(model, train, test, K, sigma, show_results=show_results, gridsearch=gridsearch,
+            r = run_label_xp(None, model, train, test, K, sigma, show_results=show_results, gridsearch=gridsearch,
                              showgraph=showgraph, user=(5, 6))
             label_error_train.append(r['Label error train'])
             pref_error_train.append(r['Pref error train'])

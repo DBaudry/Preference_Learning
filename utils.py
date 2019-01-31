@@ -10,11 +10,11 @@ from sklearn.datasets import load_svmlight_file
 import warnings
 warnings.filterwarnings("ignore")
 
-targets = {'abalone': 'rings', 'housing': 'class', 'machine': 'class', 'pyrim': 'activity', 'r_wpbc': 'Time',
-           'triazines': 'activity'}
+targets = {'abalone': 'rings', 'housing': 'class', 'machine': 'class', 'pyrim': 'activity', 'triazines': 'activity'
+           }
 
 dataset_shapes = {'abalone': (4177, 9), 'housing': (506, 14), 'machine': (209, 7), 'pyrim': (74, 28),
-                  'r_wpbc': (194, 33), 'triazines': (186, 61)}
+                  'triazines': (186, 61)}
 
 mapping_n_labels = {'sushia': 10, 'sushib': 100, 'movies': 7, 'german2005': 5, 'german2009': 5, 'algae': 7, 'dna': 3,
                     'letter': 26, 'mnist': 10, 'satimage': 6, 'segment': 7, 'usps': 10, 'waveform': 3}
@@ -22,11 +22,11 @@ mapping_n_labels = {'sushia': 10, 'sushib': 100, 'movies': 7, 'german2005': 5, '
 authors_n_pref = {'pyrim': 100, 'triazines': 300, 'machine': 500, 'housing': 700, 'abalone': 1000
                   }
 
-# some have not been determined
+# some have not been determined (None, None)
 best_parameters = {'pyrim': (0.005, 0.007), 'triazines': (0.007, 0.006), 'machine': (0.03, 0.0006),
-                   'housing': (0.005, 0.001), 'abalone': (80, 0.025), 'sushia': ('?', '?'), 'sushib': ('?', '?'),
-                   'movies': ('?', '?'), 'german2005': (2, 0.2), 'german2009': (2, 0.2), 'algae': ('?', '?'),
-                   'dna': (0.1, 0.001), 'letter': ('?', '?'), 'mnist': ('?', '?'), 'satimage': (10, 0.1),
+                   'housing': (0.005, 0.001), 'abalone': (80, 0.025), 'sushia': (None, None), 'sushib': (None, None),
+                   'movies': (None, None), 'german2005': (2, 0.2), 'german2009': (2, 0.2), 'algae': (None, None),
+                   'dna': (0.1, 0.001), 'letter': (None, None), 'mnist': (None, None), 'satimage': (10, 0.1),
                    'segment': (10, 0.001), 'usps': (0.001, 0.005), 'waveform': (5, 0.001)}
 
 n_attributes = {'waveform': 40, 'dna': 180, 'mnist': 772, 'letter': 16, 'satimage': 36, 'usps': 256, 'segment': 19
@@ -91,13 +91,14 @@ def reshape_pref(pref):
     return np.array(new_pref), indices
 
 
-def ratio_n_obs(m_pref):
+def ratio_n_obs(m_pref, p=0.5):
     """ Instance Learning:
     Reduce number of observations for training. It relies on the authors' suggestion that n << m_pref
     :param m_pref: int, number of preferences
-    :return: int, number n of observations such that m_pref = n * (n-1)/2
+    :param p: float
+    :return: int, number n of observations such that m_pref/p = n * (n-1)/2
     """
-    return int(2*np.sqrt(2*m_pref))
+    return int(np.sqrt(2*m_pref/p))
 
 
 def gridsearchBool(param):
@@ -130,7 +131,7 @@ def get_alpha(dim):
 def read_data_IL(data, n, d):
     """ Instance Learning:
     Create a dataFrame containing both data (using file .data) and columns' labels (using file .domain)
-    :param data: string, choice between abalone, diabetes, housing, machine, pyrim, r_wpbc, triazines
+    :param data: string, choice between abalone, housing, machine, pyrim, triazines
     :param n: int, maximal number of observations to construct preferences pairs
     :param d: int, maximal number of variables
     :return: pandas dataframe

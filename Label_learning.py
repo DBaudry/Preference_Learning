@@ -8,18 +8,22 @@ from scipy.linalg import block_diag
 
 
 class learning_label_preference:
+    """
+    Implement GP for Label Preference Learning
+    """
     def __init__(self, inputs, K, sigma, print_callback=True):
         self.init_param(inputs, K, sigma)
+        # Parameters for gradient descent
         self.Nfeval = 1
         self.S = 0
         self.print_callback = print_callback
 
     def init_param(self, inputs, all_K, sigma):
         """
-        :param inputs: tuple->(subset of X, list of preferences (u,v)=> u>v
-        :param K: coefficient for the gaussian Kernels
-        :param sigma: variance of the noise
-        :return: Set the attributes of the model with the given inputs
+        :param inputs: tuple, - np.array, subset of X
+                              - list of preferences where (u,v) means that u is preferred to v and vice versa
+        :param K: float, coefficient for Gaussian Kernels
+        :param sigma: float, noise variance
         """
         self.X = inputs[0]
         self.D = inputs[1]
@@ -38,12 +42,15 @@ class learning_label_preference:
         self.phi = None
 
     def compute_cov(self, K):
+        """
+        :param K: float, parameter of the Gaussian kernel
+        :return: np.array, covariance matrix for training
+        """
         cov = np.eye(self.n)
         for i in range(self.n):
             for j in range(i):
                 cov_ij = gaussian_kernel(self.X[i], self.X[j], K)
-                cov[i, j] = cov_ij
-                cov[j, i] = cov_ij
+                cov[i, j], cov[j, i] = cov_ij, cov_ij
         return cov
 
     def get_corresp(self):
@@ -64,8 +71,8 @@ class learning_label_preference:
 
     def compute_prior(self, y):
         """
-        :param y: array of shape n_labels x n
-        :return: prior probability of y
+        :param y: np.array, array of shape n_labels x n
+        :return: float, prior probability of y
         """
         y = y.reshape((self.n_labels, self.n))
         prod = 1.
@@ -75,8 +82,7 @@ class learning_label_preference:
 
     def compute_z_phi(self, y):
         """
-        :param y:
-        :return:
+        :param y: np.array, array of shape n_labels x n
         """
         y = y.reshape((self.n_labels, self.n))
         z = []
@@ -89,6 +95,10 @@ class learning_label_preference:
         self.phi = norm.cdf(z)
 
     def compute_S(self, y):
+        """
+        :param y: np.array, array of shape n_labels x n
+        :return: np.array, S(y)
+        """
         if distance(y, self.current_y) != 0:
             self.compute_z_phi(y)
         prior = 0
@@ -99,8 +109,8 @@ class learning_label_preference:
 
     def compute_grad_S(self, y):
         """
-        :param y: array of shape n_labels x n
-        :return: grad of S according to a vector of size(n_labels x n) by reshaping y
+        :param y: np.array, array of shape n_labels x n
+        :return: np.array, grad of S according to a vector of size(n_labels x n) by reshaping y
         """
         if distance(y, self.current_y) != 0:
             self.compute_z_phi(y)
@@ -116,6 +126,10 @@ class learning_label_preference:
         return grad.reshape(self.n_labels*self.n)
 
     def compute_Hessian_S(self, y):
+        """
+        :param y: np.array, array of shape n_labels x n
+        :return: np.array, Hessian of S evaluated in y
+        """
         if distance(y, self.current_y) != 0:
             self.compute_z_phi(y)
         Hess_phi = [np.zeros((self.n_labels, self.n_labels)) for _ in range(self.n)]
@@ -130,6 +144,10 @@ class learning_label_preference:
         return Hess_phi_all + Hess_cov
 
     def callbackF(self, Xi):
+        """
+        :param Xi: np.array, values returned by scipy.minimize at each iteration
+        :return: None, update print
+        """
         if self.Nfeval == 1:
             self.S = self.compute_S(Xi)
             print('Iteration {0:2.0f} : S(y)={1:3.6f}'.format(self.Nfeval, self.S))
@@ -141,25 +159,25 @@ class learning_label_preference:
 
     def compute_MAP(self, y):
         """
-        :param y: Starting vector for the minimization program
-        :return: A scipy OptimizeResult dict with results after the minimization
-        (convergence, last value, jacobian,...)
+        :param y: np.array, starting vector for the minimization program
+        :return: scipy.optimize.minimize object, i.e. a scipy OptimizeResult dict with results after the minimization
+        (convergence, last value, Jacobian matrix,...)
         """
         if self.print_callback:
             print('Starting gradient descent:')
             m = minimize(self.compute_S, y, method='Newton-CG', jac=self.compute_grad_S,
                          hess=self.compute_Hessian_S, tol=1e-4, callback=self.callbackF)
         else:
-            m = minimize(self.compute_S, y, method='L-BFGS-B', jac=self.compute_grad_S,
+            m = minimize(self.compute_S, y, method='Newton-CG', jac=self.compute_grad_S,
                          hess=self.compute_Hessian_S, tol=1e-4)
         return m
 
     def compute_MAP_with_gridsearch(self, y0, grid_K, grid_sigma):
         """
-        :param y0: Starting point for optimization
-        :param grid_K: grid for the kernel parameter K
-        :param grid_sigma: grid for the noise variance parameter sigma
-        :return: Maximum a posteriori for the given value of x for the parameters
+        :param y0: np.array, starting point for optimization
+        :param grid_K: np.array, grid for the kernel parameter K
+        :param grid_sigma: np.array, grid for the noise variance parameter sigma
+        :return: np.array, Maximum a posteriori for the given value of x for the parameters
         with the largest evidence
         """
         best_K, best_sigma, best_evidence = grid_K[0], grid_sigma[0], -np.inf
@@ -176,7 +194,7 @@ class learning_label_preference:
                 except:
                     print('K={}, sigma={:0.4f} : singular matrix'.format(self.K, self.sigma))
                     continue
-                if -1 > evidence > best_evidence:
+                if 0 > evidence > best_evidence:
                     best_evidence = evidence
                     best_K, best_sigma = self.K, self.sigma
                     best_MAP = MAP
@@ -188,8 +206,8 @@ class learning_label_preference:
 
     def evidence_approx(self, y):
         """
-        :param y: a vector with n values of f(x) (for x in self.X)
-        :return: Laplace approximation of the evidence of the model with y
+        :param y: np.array, a vector with n values of f(x) (for x in self.X)
+        :return: np.array, Laplace approximation of the evidence of the model evaluated in y
         """
         S, H = self.compute_S(y), self.compute_Hessian_S(y)
         cov = block_diag(*self.all_cov)
@@ -213,6 +231,9 @@ class learning_label_preference:
         return E.T
 
     def label_pref_rate(self, pref, map):
+        """
+        Compute Pref Error Rate as detailed in the report
+        """
         count_glob, count_correct = 0, 0
         for i, p in enumerate(map):
             n = len(p)
@@ -229,9 +250,7 @@ class learning_label_preference:
 
     def label_score_rate(self, pref, map):
         """
-        :param pref: Boolean matrix with input preferences
-        :param map: Boolean matrix with output preferences
-        :return: confusion matrix (the result is symmetric)
+        Compute Label Error Rate as detailed in the report
         """
         class_pred = np.argsort(map, axis=1)[:, -1]
         return np.mean(pref == class_pred)

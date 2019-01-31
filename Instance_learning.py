@@ -7,8 +7,12 @@ from utils import distance, n_pdf, gaussian_kernel
 
 
 class learning_instance_preference:
+    """
+    Implement GP for Instance Preference Learning
+    """
     def __init__(self, inputs, K, sigma, print_callback=True):
         self.init_param(inputs, K, sigma)
+        # Parameters for gradient descent
         self.Nfeval = 1
         self.S = 0
         self.print_callback = print_callback
@@ -16,10 +20,10 @@ class learning_instance_preference:
 
     def init_param(self, inputs, K, sigma):
         """
-        :param inputs: tuple->(subset of X, list of preferences (u,v)=> u>v
-        :param K: coefficient for the gaussian Kernels
-        :param sigma: variance of the noise
-        :return: Set the attributes of the model with the given inputs
+        :param inputs: tuple, - np.array, subset of X
+                              - list of preferences where (u,v) means that u is preferred to v and vice versa
+        :param K: float, coefficient for Gaussian Kernels
+        :param sigma: float, noise variance
         """
         self.X = inputs[0]
         self.D = inputs[1]
@@ -36,28 +40,28 @@ class learning_instance_preference:
 
     def compute_cov(self, K):
         """
-        :param K: parameter of the gaussian kernel
-        :return: Covariance matrix for the training dataset
+        :param K: float, parameter of the Gaussian kernel
+        :return: np.array, covariance matrix for training
         """
         cov = np.eye(self.n)
         for i in range(self.n):
             for j in range(i):
                 cov_ij = gaussian_kernel(self.X[i], self.X[j], K)
-                cov[i, j] = cov_ij
-                cov[j, i] = cov_ij
+                cov[i, j], cov[j, i] = cov_ij, cov_ij
         return cov
 
     def compute_prior(self, y):
         """
-        :param y: vector of size self.n
-        :return: prior density in y
+        :param y: np.array, vector of size self.n
+        :return: np.array, prior density evaluated in y
         """
         return mn.pdf(y, mean=np.zeros(self.n), cov=self.cov)
 
     def compute_z_phi(self, y):
         """
-        :param y: vector of size n
-        :return: list of z_k and list of phi(z_k) as defined in (5) in the paper
+        :param y: np.array, vector of size self.n
+        :return: None, - list of z_k
+                       - list of phi(z_k) as defined in the paper (5)
         """
         z = np.apply_along_axis(lambda x: (y[x[0]]-y[x[1]])/(np.sqrt(2)*self.sigma), 1, self.D)
         self.current_y = y
@@ -66,8 +70,8 @@ class learning_instance_preference:
 
     def compute_S(self, y):
         """
-        :param y: vector of size n
-        :return: S(y)
+        :param y: np.array, vector of size self.n
+        :return: np.array, S(y)
         """
         if distance(y, self.current_y) != 0:
             self.compute_z_phi(y)
@@ -84,31 +88,36 @@ class learning_instance_preference:
 
     def compute_grad_S(self, y):
         """
-        :param y: vector of size n
-        :return: Gradient of S in y
+        :param y: np.array, vector of size self.n
+        :return: np.array, gradient of S evaluated in y
         """
         if distance(y, self.current_y) != 0:
             self.compute_z_phi(y)
         phi_grad = np.array([sum([self.partial_df(k, i) for k in range(self.m)]) for i in range(self.n)])
         return phi_grad+np.dot(self.inv_cov, y)
 
+    def partial_d2f(self, k, i, j):
+        s_ij = self.s(k, i) * self.s(k, j) / 2 / self.sigma ** 2
+        nk = n_pdf(self.z[k]) / self.phi[k]
+        return s_ij * (nk ** 2 + self.z[k] * nk)
+
     def compute_Hessian_S(self, y):
         """
-        :param y: vector of size n
-        :return: Hessian of S in y
+        :param y: np.array, vector of size self.n
+        :return: np.array, Hessian of S evaluated in y
         """
         if distance(y, self.current_y) != 0:
             self.compute_z_phi(y)
-        def partial_d2f(k, i, j):
-            s_ij = self.s(k, i)*self.s(k, j)/2/self.sigma**2
-            nk = n_pdf(self.z[k])/self.phi[k]
-            return s_ij*(nk**2+self.z[k]*nk)
-        phi_Hess = np.array([[sum([partial_d2f(k, i, j) for k in range(self.m)])
+        phi_Hess = np.array([[sum([self.partial_d2f(k, i, j) for k in range(self.m)])
                               for j in range(self.n)] for i in range(self.n)])
         self.nu = phi_Hess
         return phi_Hess+self.inv_cov
 
     def callbackF(self, Xi):
+        """
+        :param Xi: np.array, values returned by scipy.minimize at each iteration
+        :return: None, update print
+        """
         if self.Nfeval == 1:
             self.S = self.compute_S(Xi)
             print('Iteration {0:2.0f} : S(y)={1:3.6f}'.format(self.Nfeval, self.S))
@@ -120,9 +129,9 @@ class learning_instance_preference:
 
     def compute_MAP(self, y):
         """
-        :param y: Starting vector for the minimization program
-        :return: A scipy OptimizeResult dict with results after the minimization
-        (convergence, last value, jacobian,...)
+        :param y: np.array, starting vector for the minimization program
+        :return: scipy.optimize.minimize object, i.e. a scipy OptimizeResult dict with results after the minimization
+        (convergence, last value, Jacobian matrix,...)
         """
         if self.print_callback:
             print('Starting gradient descent:')
@@ -135,8 +144,8 @@ class learning_instance_preference:
 
     def evidence_approx(self, y):
         """
-        :param y: a vector with n values of f(x) (for x in self.X)
-        :return: Laplace approximation of the evidence of the model with y
+        :param y: np.array, a vector with self.n values of f(x) (for x in self.X)
+        :return:  np.array, Laplace approximation of the evidence of the model evaluated in y
         """
         S, H = self.compute_S(y), self.compute_Hessian_S(y)
         denom = np.linalg.det(np.dot(self.cov, H))
@@ -144,11 +153,10 @@ class learning_instance_preference:
 
     def compute_MAP_with_gridsearch(self, y0, grid_K, grid_sigma):
         """
-        :param y0: Starting point for optimization
-        :param grid_K: grid for the kernel parameter K
-        :param grid_sigma: grid for the noise variance parameter sigma
-        :return: Maximum a posteriori for the given value of x for the parameters
-        with the largest evidence
+        :param y0: np.array, starting point for optimization
+        :param grid_K: np.array, grid for the kernel parameter K
+        :param grid_sigma: np.array, grid for the noise variance parameter sigma
+        :return: np.array, Maximum a posteriori for the given value of x for the parameters with the largest evidence
         """
         best_K, best_sigma, best_evidence = grid_K[0], grid_sigma[0], -np.inf
         for K in tqdm(grid_K):
@@ -172,11 +180,11 @@ class learning_instance_preference:
 
     def predict_single_pref(self, r, s, f_map, M):
         """
-        :param r: vector of dimension d
-        :param s: vector of dimension d
-        :param f_map: Maximum a posteriori for n vectors in R^d
-        :param M: covariance matrix computed for the maximum a posteriori
-        :return: Probability that r is preferred over s
+        :param r: np.array, vector of dimension d
+        :param s: np.array, vector of dimension d
+        :param f_map: np.array, Maximum a posteriori for n vectors in R^d
+        :param M: np.array, covariance matrix computed at the maximum a posteriori
+        :return: float, probability that r is preferred over s
         """
         sigma_t = np.array([[1., gaussian_kernel(r, s, self.K)], [gaussian_kernel(r, s, self.K), 1.]])
         kt = np.zeros((self.n, 2))
@@ -189,12 +197,12 @@ class learning_instance_preference:
 
     def predict(self, test_set, f_map, get_proba=False):
         """
-        :param test_set: tuple of length 2:
-        * an array for the test X from which preferences are drawn
-        * a list of tuples (i,j) for the m' new preferences to predict, where i is
-        preferred to j (helps for the score)
-        :param f_map: Maximum a Posteriori obtained with the Gaussian Kernels method
-        :return: Score of the prediction, list of the probabilities P(i preferred over j)
+        :param test_set: tuple of length 2, - an array for the test X from which preferences are drawn
+                                            - a list of tuples (i,j) for the new preferences to predict, where i is
+                                              preferred to j (helps for the score)
+        :param f_map: np.array, Maximum a Posteriori obtained with the GP method
+        :return: tuple, - float, score of the prediction
+                        - np.array, array of probabilities P(i preferred over j)
         """
         X = test_set[0]
         pref = test_set[1]
@@ -224,8 +232,8 @@ class learning_instance_preference:
 
     def get_train_pref(self, mp):
         """
-        :param mp: Maximum a posteriori for n values of x
-        :return: A matrix with booleans: 1 if map[i]>map[j] else 0
+        :param mp: np.array, Maximum a posteriori for n values of x
+        :return: np.array, a matrix of booleans: 1 if map[i] > map[j] else 0
         """
         pref = np.zeros((self.n, self.n))
         for i in range(self.n):
@@ -236,9 +244,9 @@ class learning_instance_preference:
 
     def get_confusion_matrix(self, pref, map):
         """
-        :param pref: Boolean matrix with input preferences
-        :param map: Boolean matrix with output preferences
-        :return: confusion matrix (the result is symmetric)
+        :param pref: np.array, Boolean matrix with input preferences
+        :param map: np.array, Boolean matrix with output preferences
+        :return: np.array, confusion matrix (the result is symmetric)
         """
         matrix = np.zeros((2, 2))
         matrix[0, 0] = ((1-pref)*(1-map)).sum()
@@ -249,9 +257,9 @@ class learning_instance_preference:
 
     def score(self, pref, map):
         """
-        :param pref: Boolean matrix with input preferences
-        :param map: Boolean matrix with output preferences
-        :return: confusion matrix (the result is symmetric)
+        :param pref: np.array, Boolean matrix with input preferences
+        :param map: np.array, Boolean matrix with output preferences
+        :return: np.array, confusion matrix (the result is symmetric)
         """
         tot = self.n*(self.n-1)/2
         err = ((pref-map) != 0).sum()/2
