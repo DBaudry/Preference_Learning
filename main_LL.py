@@ -7,7 +7,8 @@ import itertools
 
 check_random = False
 check_label = False
-check_authors_expe = True
+check_authors_expe = False
+check_SVM = True
 
 np.random.seed(42312)
 
@@ -28,7 +29,7 @@ if __name__ == '__main__':
         test = generator.generate_X_pref(n, m, d)
         K, sigma = np.arange(n_label)+1., 0.1
         model = LL.learning_label_preference(inputs=train, K=K, sigma=sigma)
-        xp.run_label_xp(generator, model, train, test, K, sigma, gridsearch=False)
+        xp.run_label_xp(generator, model, train, test, K, sigma, gridsearch=False, random=True)
 
     if check_label:
         # Check_real_data does the same thing as before but with real data sets, namely data sets in Data folder.
@@ -44,20 +45,23 @@ if __name__ == '__main__':
         K, sigma = np.ones(utils.mapping_n_labels[dataset])*K0, sigma0
         model = LL.learning_label_preference(inputs=train, K=K, sigma=sigma, print_callback=True)
         # showgraph shows real and predicted preferences graphs for 2 users (5, 6) by default
-        xp.run_label_xp(model, train, test, K, sigma, show_results=False, gridsearch=False, showgraph=True, user=(5, 6))
+        xp.run_label_xp(None, model, train, test, K, sigma, show_results=False, gridsearch=False, showgraph=True, user=(5, 6))
 
     if check_authors_expe:
-        datasets = ['sushia']  # ['dna', 'waveform', 'satimage', 'segment', 'usps']
-        n_expe = 20
+        datasets = ['waveform']  # ['dna', 'waveform', 'satimage', 'segment', 'usps']
+        n_expe = 3
         # For gridsearch method you can start with
-        param = [[j*10**i for (i,j) in itertools.product(range(-5, 2), [1, 2, 5, 7])],
-                 [j * 10 ** i for (i, j) in itertools.product(range(-4, 2), [1, 2, 5, 7])]]
+        #param = [[j*10**i for (i,j) in itertools.product(range(-5, 2), [1, 2, 5, 7])],
+        #         [j * 10 ** i for (i, j) in itertools.product(range(-4, 2), [1, 2, 5, 7])]]
         # If you want to use best parameters set param = 'best'
-        #param = 'best'
+        param = 'best'
         xp.run_label_xp_authors(n_expe, datasets, param=param, show_results=False, showgraph=True,
-                                print_callback=False)
+                                print_callback=True)
 
+    if check_SVM:
         # for the SVM based methods
+        datasets = ['waveform']  # ['dna', 'waveform', 'satimage', 'segment', 'usps']
+        n_expe = 3
         C, K = np.exp(np.arange(-2, 5)*np.log(10)), np.exp(np.arange(-3, 4)*np.log(10))
         xp.run_label_xp_authors_SVM(datasets, n_expe=n_expe, K=K, C=C)
 

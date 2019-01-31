@@ -38,7 +38,7 @@ class pref_generator():
         :param m: int, number of preferences
         :return: list of tuples, testing pairs which are different from training pairs
         """
-        n1 = 0 if self.n == self.nmax else n1 = self.n+1
+        n1 = 0 if self.n == self.nmax else self.n+1
         self.pairs_index = np.array([(i, j) for (i, j) in utils.combinations(self.nmax, n1)])
         replace = True if m > len(self.pairs_index) else False
         idx = np.random.choice(len(self.pairs_index), m, replace=replace)
@@ -193,7 +193,7 @@ class instance_pref_generator:
                         - test: X_test, D_test
         """
         train = self.generate_X_pref(n, m, d)
-        test = self.set_m_preference(train[0], mp)
+        test = (train[0], self.set_m_preference(train[0], mp))
         return train, test
 
     def get_true_pref(self, X):
